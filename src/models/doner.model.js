@@ -29,6 +29,12 @@ const userSchema = new Schema(
       trim: true,
     },
 
+    gender: {
+      type: String,
+      required: true,
+      enum: ["Male", "Female", "Other"],
+    },
+
     bloogGroup: {
       type: String,
       required: true,
@@ -86,6 +92,18 @@ const userSchema = new Schema(
 
     state: {
       type: String,
+      required: true,
+      trim: true,
+    },
+
+    district: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    pinCode: {
+      type: Number,
       required: true,
       trim: true,
     },
