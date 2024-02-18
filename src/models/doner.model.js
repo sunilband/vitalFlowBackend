@@ -53,6 +53,7 @@ const userSchema = new Schema(
         },
         message: (props) => `${props.value} is not a valid email`,
       },
+      default: "N/A",
     },
 
     phone: {
@@ -88,6 +89,7 @@ const userSchema = new Schema(
       },
       trim: true,
       index: true,
+      default: "N/A",
     },
 
     address: {
@@ -102,12 +104,12 @@ const userSchema = new Schema(
       },
     ],
 
-    donationRequestsHistory: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "DonationRequest",
-      },
-    ],
+    // donationRequestsHistory: [
+    //   {
+    //     type: Schema.Types.ObjectId,
+    //     ref: "DonationRequest",
+    //   },
+    // ],
   },
   {
     timestamps: true,
@@ -131,7 +133,7 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-// custom method to generate authToken
+// check password
 userSchema.methods.ispasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };

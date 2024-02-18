@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 
 const donationCampSchema = new Schema(
   {
-    oranizationName: {
+    organizationName: {
       type: String,
       required: true,
       trim: true,
@@ -30,6 +30,10 @@ const donationCampSchema = new Schema(
       type: Number,
       required: true,
       trim: true,
+      countryCode: {
+        type: String,
+        default: "+91",
+      },
       validate: {
         validator: function (v) {
           return /^[6-9]\d{9}$/.test(v);
@@ -52,16 +56,22 @@ const donationCampSchema = new Schema(
     coOrganizerName: {
       type: String,
       trim: true,
+      default: "N/A",
     },
     coOrganizerMobileNumber: {
       type: Number,
       trim: true,
+      countryCode: {
+        type: String,
+        default: "+91",
+      },
       validate: {
         validator: function (v) {
           return /^[6-9]\d{9}$/.test(v);
         },
         message: (props) => `${props.value} is not a valid phone number`,
       },
+      default: "N/A",
     },
     campName: {
       type: String,
@@ -73,9 +83,8 @@ const donationCampSchema = new Schema(
       ref: "Address",
     },
     bloodbank: {
-      type: String,
-      trim: true,
-      required: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "BloodBank",
     },
     campDate: {
       type: Date,
@@ -96,13 +105,16 @@ const donationCampSchema = new Schema(
       required: true,
       trim: true,
     },
+    //sponser or prayojak
     supporter: {
       type: String,
       trim: true,
+      default: "N/A",
     },
     remarks: {
       type: String,
       trim: true,
+      default: "N/A",
     },
   },
   {

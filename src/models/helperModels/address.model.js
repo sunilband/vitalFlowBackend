@@ -18,6 +18,7 @@ const addressSchema = new Schema(
     addressLine2: {
       type: String,
       trim: true,
+      default: "N/A",
     },
     district: {
       type: String,
@@ -41,9 +42,11 @@ const addressSchema = new Schema(
     },
     longitude: {
       type: Number,
+      default: 0,
     },
     latitude: {
       type: Number,
+      default: 0,
     },
   },
   {

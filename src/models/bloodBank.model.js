@@ -12,6 +12,7 @@ const bloodBankSchema = new Schema(
     parentHospitalName: {
       type: String,
       trim: true,
+      default: "N/A",
     },
     category: {
       type: String,
@@ -28,6 +29,10 @@ const bloodBankSchema = new Schema(
       type: Number,
       required: true,
       trim: true,
+      countryCode: {
+        type: String,
+        default: "+91",
+      },
     },
     email: {
       type: String,
@@ -58,6 +63,7 @@ const bloodBankSchema = new Schema(
       type: String,
       unique: true,
       trim: true,
+      required: true,
     },
     licenseValidity: {
       type: Date,
@@ -76,6 +82,7 @@ const bloodBankSchema = new Schema(
         },
         message: (props) => `${props.value} is not a valid website`,
       },
+      default: "N/A",
     },
     componentFacility: {
       type: Boolean,
@@ -88,76 +95,121 @@ const bloodBankSchema = new Schema(
     helplineNumber: {
       type: Number,
       trim: true,
+      validate: {
+        validator: function (v) {
+          return /^[6-9]\d{9}$/.test(v);
+        },
+        message: (props) => `${props.value} is not a valid phone number`,
+      },
+      default: "N/A",
     },
-    donorType: {
-      type: String,
-      required: true,
-      enum: [
-        "Voluntary",
-        "Replacement",
-        "Directed",
-        "Autologous",
-        "Family",
-        "Replacement External",
-      ],
-      trim: true,
+    acceptedDonorType: {
+      selectedOptions: {
+        type: [
+          {
+            type: String,
+            enum: [
+              "Voluntary",
+              "Replacement",
+              "Directed",
+              "Autologous",
+              "Professional Donor",
+            ],
+          },
+        ],
+        default: [],
+      },
     },
-    donationType: {
-      type: String,
-      required: true,
-      enum: [
-        "Whole Blood",
-        "Plateletpheresis",
-        "Plasmapheresis",
-        "Leucaperesis",
-      ],
-      trim: true,
+    acceptedDonationType: {
+      selectedOptions: {
+        type: [
+          {
+            type: String,
+            enum: [
+              "Whole Blood",
+              "Plateletpheresis",
+              "Plasmapheresis",
+              "Double Red Cell",
+              "Single Donor Platelet",
+              "Single Donor Plasma",
+              "Cord Blood",
+              "Apheresis",
+            ],
+          },
+        ],
+        default: [],
+      },
     },
-    componentType: {
-      type: String,
-      enum: [
-        "Cryo Poor Plasma",
-        "Cryoprecipitate",
-        "Fresh Frozen Plasma",
-        "Irradiated RBC",
-        "Leukoreduced RBC",
-        "Packed Red Blood Cells",
-        "Plasma",
-        "Platelet Concentrate",
-        "Platelet Rich Plasma",
-        "Platelets additive solutions",
-        "Random Donor Platelets",
-        "Sagm Packed RBC",
-        "Single Donor Plasma",
-        "Single Donor Platelet",
-        "Whole Blood",
-      ],
-      trim: true,
+    acceptedComponentType: {
+      selectedOptions: {
+        type: [
+          {
+            type: String,
+            enum: [
+              "Cryo Poor Plasma",
+              "Cryoprecipitate",
+              "Fresh Frozen Plasma",
+              "Irradiated RBC",
+              "Leukoreduced RBC",
+              "Packed Red Blood Cells",
+              "Plasma",
+              "Platelet Concentrate",
+              "Platelet Rich Plasma",
+              "Platelets additive solutions",
+              "Random Donor Platelets",
+              "Sagm Packed RBC",
+              "Single Donor Plasma",
+              "Single Donor Platelet",
+              "Whole Blood",
+            ],
+          },
+        ],
+        default: [],
+      },
     },
     bagType: {
-      type: String,
-      enum: [
-        "Single (350/450ml)",
-        "Double (350/450ml)",
-        "Triple (350/450ml)",
-        "Quadruple (450ml) with inline filter",
-        "Quadruple (450ml) without inline filter",
-        "Penta Bag (450ml)",
-        "Transfer Bag",
-        "Aphearesis Bag",
-        "Triple (350ml) CPD/SAGM",
-        "Triple (450ml) CPD/SAGM",
-      ],
-      trim: true,
+      selectedOptions: {
+        type: [
+          {
+            type: String,
+            enum: [
+              "Single (350/450ml)",
+              "Double (350/450ml)",
+              "Triple (350/450ml)",
+              "Quadruple (450ml) with inline filter",
+              "Quadruple (450ml) without inline filter",
+              "Penta Bag (450ml)",
+              "Transfer Bag",
+              "Aphearesis Bag",
+              "Triple (350ml) CPD/SAGM",
+              "Triple (450ml) CPD/SAGM",
+            ],
+          },
+        ],
+        default: [],
+      },
     },
     ttiType: {
-      type: String,
-      enum: ["HIV 1&2", "Hepatitis B", "Hepatitis C", "Malaria", "Syphilis"],
-      trim: true,
+      selectedOptions: {
+        type: [
+          {
+            type: String,
+            enum: [
+              "HIV 1&2",
+              "Hepatitis B",
+              "Hepatitis C",
+              "Malaria",
+              "Syphilis",
+            ],
+          },
+        ],
+        default: [],
+      },
     },
     remarks: {
       type: String,
       trim: true,
+      default: "N/A",
     },
   },
   {
