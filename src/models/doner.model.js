@@ -35,7 +35,7 @@ const userSchema = new Schema(
       enum: ["Male", "Female", "Other"],
     },
 
-    bloogGroup: {
+    bloodGroup: {
       type: String,
       required: true,
       enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
@@ -90,22 +90,9 @@ const userSchema = new Schema(
       index: true,
     },
 
-    state: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    district: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    pinCode: {
-      type: Number,
-      required: true,
-      trim: true,
+    address: {
+      type: Schema.Types.ObjectId,
+      ref: "Address",
     },
 
     donationHistory: [
