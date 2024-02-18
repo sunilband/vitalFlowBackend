@@ -14,10 +14,6 @@ const donationSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "DonationCamp",
   },
-  bloodBankId: {
-    type: Schema.Types.ObjectId,
-    ref: "BloodBank",
-  },
 });
 
 export const Donation = mongoose.model("Donation", donationSchema);

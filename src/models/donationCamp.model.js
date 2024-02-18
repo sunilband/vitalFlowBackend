@@ -116,6 +116,13 @@ const donationCampSchema = new Schema(
       trim: true,
       default: "N/A",
     },
+    status: {
+      type: String,
+      required: true,
+      trim: true,
+      enum: ["Pending", "Approved", "Rejected", "Completed"],
+      default: "Pending",
+    },
   },
   {
     timestamps: true,
