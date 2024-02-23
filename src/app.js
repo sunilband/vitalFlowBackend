@@ -32,4 +32,8 @@ app.use(express.static("public"));
 // Read and set user cookies
 app.use(cookieParser());
 
+// routes
+import donerRouter from "./routes/doner.routes.js";
+app.use("/api/v1/", donerRouter);
+
 export { app };

@@ -53,7 +53,6 @@ const donorSchema = new Schema(
         },
         message: (props) => `${props.value} is not a valid email`,
       },
-      default: "N/A",
     },
 
     phone: {
@@ -89,7 +88,6 @@ const donorSchema = new Schema(
       },
       trim: true,
       index: true,
-      default: "N/A",
     },
 
     address: {
@@ -103,13 +101,6 @@ const donorSchema = new Schema(
         ref: "Donation",
       },
     ],
-
-    // donationRequestsHistory: [
-    //   {
-    //     type: Schema.Types.ObjectId,
-    //     ref: "DonationRequest",
-    //   },
-    // ],
   },
   {
     timestamps: true,
