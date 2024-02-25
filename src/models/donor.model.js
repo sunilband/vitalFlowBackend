@@ -2,7 +2,7 @@ import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
-const userSchema = new Schema(
+const donorSchema = new Schema(
   {
     fullName: {
       type: String,
@@ -29,7 +29,13 @@ const userSchema = new Schema(
       trim: true,
     },
 
-    bloogGroup: {
+    gender: {
+      type: String,
+      required: true,
+      enum: ["Male", "Female", "Other"],
+    },
+
+    bloodGroup: {
       type: String,
       required: true,
       enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
@@ -84,23 +90,15 @@ const userSchema = new Schema(
       index: true,
     },
 
-    state: {
-      type: String,
-      required: true,
-      trim: true,
+    address: {
+      type: Schema.Types.ObjectId,
+      ref: "Address",
     },
 
     donationHistory: [
       {
         type: Schema.Types.ObjectId,
         ref: "Donation",
-      },
-    ],
-
-    donationRequestsHistory: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "DonationRequest",
       },
     ],
   },
@@ -110,7 +108,7 @@ const userSchema = new Schema(
 );
 
 // pre save hook to calculate age from dob
-userSchema.pre("save", function (next) {
+donorSchema.pre("save", function (next) {
   const dob = this.dob;
   const ageDate = new Date(Date.now() - dob.getTime()); // miliseconds from epoch
   const age = Math.abs(ageDate.getUTCFullYear() - 1970);
@@ -119,24 +117,24 @@ userSchema.pre("save", function (next) {
 });
 
 // we are not using arrow function here because we need access to "this"
-userSchema.pre("save", async function (next) {
+donorSchema.pre("save", async function (next) {
   if (this.isModified("password")) {
     this.password = await bcrypt.hash(this.password, 10);
   }
   next();
 });
 
-// custom method to generate authToken
-userSchema.methods.ispasswordCorrect = async function (password) {
+// check password
+donorSchema.methods.ispasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
 // custom method to generate authToken
-userSchema.methods.generateAuthToken = async function () {
+donorSchema.methods.generateAuthToken = async function () {
   const token = await jwt.sign(
     {
       _id: this._id,
-      username: this.username,
+      donorname: this.donorname,
       fullName: this.fullName,
       email: this.email,
     },
@@ -147,7 +145,7 @@ userSchema.methods.generateAuthToken = async function () {
 };
 
 // custom method to generate refreshToken
-userSchema.methods.generateRefreshToken = async function () {
+donorSchema.methods.generateRefreshToken = async function () {
   const token = await jwt.sign(
     {
       _id: this._id,
@@ -158,4 +156,4 @@ userSchema.methods.generateRefreshToken = async function () {
   return token;
 };
 
-export const User = mongoose.model("User", userSchema);
+export const Donor = mongoose.model("Donor", donorSchema);
