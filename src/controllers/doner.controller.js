@@ -33,7 +33,6 @@ const sendPhoneOTP = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Please provide a valid phone number");
   }
 
-  await Otp.deleteOldOtps();
   const existingOtp = await Otp.findOne({ phone, status: "pending" });
 
   if (existingOtp) {
@@ -45,13 +44,36 @@ const sendPhoneOTP = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, {}, "OTP sent successfully"));
 });
 
+// Send OTP Email
+const sendEmailOTP = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    throw new ApiError(400, "Please provide a email ");
+  } else if (!/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(email)) {
+    throw new ApiError(400, "Please provide a valid email ");
+  }
+
+  const existingOtp = await Otp.findOne({ email, status: "pending" });
+
+  if (existingOtp) {
+    throw new ApiError(409, "OTP already sent");
+  }
+
+  const newOtp = await Otp.create({ email });
+
+  res.status(200).json(new ApiResponse(200, {}, "OTP sent successfully"));
+});
+
 // ----------------Verify OTP----------------
-const verifyPhoneOTP = asyncHandler(async (req, res) => {
-  const { phone, otp } = req.body;
-  if (!phone || !otp) {
+const verifyOTP = asyncHandler(async (req, res) => {
+  const { phone, otp, email } = req.body;
+  //  check if phone or email is present and otp must be present
+  if ((!phone && !email) || !otp) {
     throw new ApiError(400, "Please provide all the required fields");
   }
-  const existingOtp = await Otp.findOne({ phone, otp, status: "pending" });
+  let existingOtp;
+  if (phone) existingOtp = await Otp.findOne({ phone, otp, status: "pending" });
+  if (email) existingOtp = await Otp.findOne({ email, otp, status: "pending" });
   if (!existingOtp) {
     throw new ApiError(404, "OTP not found");
   }
@@ -61,6 +83,7 @@ const verifyPhoneOTP = asyncHandler(async (req, res) => {
     throw new ApiError(400, "OTP expired");
   }
   existingOtp.status = "verified";
+
   await existingOtp.save({
     validateBeforeSave: false,
   });
@@ -81,7 +104,14 @@ const registerDoner = asyncHandler(async (req, res) => {
     address,
   } = req.body;
 
-  if (!fullName || !dob || !weight || !gender || !bloodGroup || !phone) {
+  if (
+    !fullName ||
+    !dob ||
+    !weight ||
+    !gender ||
+    !bloodGroup ||
+    (!phone && !email)
+  ) {
     throw new ApiError(400, "Please provide all the required fields");
   }
 
@@ -93,10 +123,13 @@ const registerDoner = asyncHandler(async (req, res) => {
     throw new ApiError(409, "Email or Username already exists");
   }
 
-  const verifiedPhone = await Otp.findOne({ phone, status: "verified" });
+  let verifiedPhone;
+  let verifiedEmail;
+  if (phone) verifiedPhone = await Otp.findOne({ phone, status: "verified" });
+  if (email) verifiedEmail = await Otp.findOne({ email, status: "verified" });
 
-  if (!verifiedPhone) {
-    throw new ApiError(400, "Phone number not verified");
+  if (!verifiedPhone && !verifiedEmail) {
+    throw new ApiError(400, `Phone or Email not verified`);
   }
 
   const newUser = await Donor.create({
@@ -107,6 +140,8 @@ const registerDoner = asyncHandler(async (req, res) => {
     bloodGroup,
     email,
     phone,
+    phoneVerified: verifiedPhone ? true : false,
+    emailVerified: verifiedEmail ? true : false,
     whatsapp,
     address,
   });
@@ -359,7 +394,8 @@ const updateAvatarAndOrCover = asyncHandler(async (req, res) => {
 
 export {
   sendPhoneOTP,
-  verifyPhoneOTP,
+  sendEmailOTP,
+  verifyOTP,
   registerDoner,
   loginUser,
   logoutUser,

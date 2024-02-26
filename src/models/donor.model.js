@@ -41,7 +41,6 @@ const donorSchema = new Schema(
       enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
       trim: true,
     },
-
     email: {
       type: String,
       unique: true,
@@ -54,6 +53,10 @@ const donorSchema = new Schema(
         message: (props) => `${props.value} is not a valid email`,
       },
     },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
 
     phone: {
       type: String,
@@ -62,7 +65,6 @@ const donorSchema = new Schema(
         default: "+91",
       },
       unique: true,
-      required: true,
       validate: {
         validator: function (v) {
           return /^[0-9]{10}$/.test(v);
@@ -71,6 +73,11 @@ const donorSchema = new Schema(
       },
       trim: true,
       index: true,
+    },
+
+    phoneVerified: {
+      type: Boolean,
+      default: false,
     },
 
     whatsapp: {
@@ -106,6 +113,15 @@ const donorSchema = new Schema(
     timestamps: true,
   }
 );
+
+// atlast one (email or phone) is required
+donorSchema.pre("validate", function (next) {
+  if (!this.phone && !this.email) {
+    next(new Error("At least one of phone or email must be provided"));
+  } else {
+    next();
+  }
+});
 
 // pre save hook to calculate age from dob
 donorSchema.pre("save", function (next) {

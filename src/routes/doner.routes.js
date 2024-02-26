@@ -1,7 +1,8 @@
 import { Router } from "express";
 import {
   sendPhoneOTP,
-  verifyPhoneOTP,
+  sendEmailOTP,
+  verifyOTP,
   registerDoner,
   loginUser,
   logoutUser,
@@ -18,7 +19,8 @@ import { rateLimit } from "../middlewares/ratelimiter.middleware.js";
 const router = Router();
 
 router.route("/send-phone-otp").post(rateLimit(1), sendPhoneOTP);
-router.route("/verify-phone-otp").post(rateLimit(1), verifyPhoneOTP);
+router.route("/send-email-otp").post(rateLimit(1), sendEmailOTP);
+router.route("/verify-otp").post(rateLimit(1), verifyOTP);
 router.route("/register-doner").post(rateLimit(1), registerDoner);
 
 // router.route("/login").post(rateLimit(3), loginUser);
