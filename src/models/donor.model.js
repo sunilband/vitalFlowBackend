@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import { addressSchema } from "./helperModels/address.model.js";
 
 const donorSchema = new Schema(
   {
@@ -98,8 +99,8 @@ const donorSchema = new Schema(
     },
 
     address: {
-      type: Schema.Types.ObjectId,
-      ref: "Address",
+      type: addressSchema,
+      required: true,
     },
 
     donationHistory: [

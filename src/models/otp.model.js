@@ -45,10 +45,10 @@ const otpSchema = new Schema(
   }
 );
 
-// // delete old otps
-// otpSchema.statics.deleteOldOtps = async function () {
-//   await this.deleteMany({ expiry: { $lt: new Date() } });
-// };
+// delete old otps
+otpSchema.statics.deleteOldOtps = async function () {
+  await this.deleteMany({ expiry: { $lt: new Date() } });
+};
 
 // Send otp on save
 otpSchema.pre("save", async function (next) {

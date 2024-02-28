@@ -2,7 +2,7 @@ import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
-const addressSchema = new Schema(
+export const addressSchema = new Schema(
   {
     addressType: {
       type: String,
@@ -20,11 +20,11 @@ const addressSchema = new Schema(
       trim: true,
       default: "N/A",
     },
-    district: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+    // district: {
+    //   type: String,
+    //   required: true,
+    //   trim: true,
+    // },
     state: {
       type: String,
       required: true,

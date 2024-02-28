@@ -1,8 +1,6 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-
-// import { User } from "../models/user.model.js";
 import { cookieOptions } from "../constants.js";
 import jwt from "jsonwebtoken";
 import { Otp } from "../models/otp.model.js";
@@ -32,20 +30,23 @@ const sendPhoneOTP = asyncHandler(async (req, res) => {
   } else if (!/^[6-9]\d{9}$/.test(phone)) {
     throw new ApiError(400, "Please provide a valid phone number");
   }
-
+  await Otp.deleteOldOtps();
   const existingOtp = await Otp.findOne({ phone, status: "pending" });
 
   if (existingOtp) {
-    throw new ApiError(409, "OTP already sent");
+    throw new ApiError(409, `OTP already sent to ${phone}`);
   }
 
   const newOtp = await Otp.create({ phone });
 
-  res.status(200).json(new ApiResponse(200, {}, "OTP sent successfully"));
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, `OTP sent successfully to ${phone}`));
 });
 
 // Send OTP Email
 const sendEmailOTP = asyncHandler(async (req, res) => {
+  await Otp.deleteOldOtps();
   const { email } = req.body;
   if (!email) {
     throw new ApiError(400, "Please provide a email ");
@@ -56,12 +57,14 @@ const sendEmailOTP = asyncHandler(async (req, res) => {
   const existingOtp = await Otp.findOne({ email, status: "pending" });
 
   if (existingOtp) {
-    throw new ApiError(409, "OTP already sent");
+    throw new ApiError(409, `OTP already sent to ${email}`);
   }
 
   const newOtp = await Otp.create({ email });
 
-  res.status(200).json(new ApiResponse(200, {}, "OTP sent successfully"));
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, `OTP sent successfully to ${email}`));
 });
 
 // ----------------Verify OTP----------------
@@ -71,18 +74,22 @@ const verifyOTP = asyncHandler(async (req, res) => {
   if ((!phone && !email) || !otp) {
     throw new ApiError(400, "Please provide all the required fields");
   }
-  let existingOtp;
-  if (phone) existingOtp = await Otp.findOne({ phone, otp, status: "pending" });
-  if (email) existingOtp = await Otp.findOne({ email, otp, status: "pending" });
-  if (!existingOtp) {
-    throw new ApiError(404, "OTP not found");
-  }
-  const currentTime = new Date();
-  if (currentTime > existingOtp.expiry) {
-    await existingOtp.remove();
-    throw new ApiError(400, "OTP expired");
-  }
-  existingOtp.status = "verified";
+
+  let existingOtp = phone
+    ? await Otp.findOne({
+        phone,
+        otp,
+        status: "pending",
+      })
+    : await Otp.findOne({
+        email,
+        otp,
+        status: "pending",
+      });
+
+  if (existingOtp) existingOtp.status = "verified";
+
+  if (!existingOtp) throw new ApiError(400, "Invalid OTP");
 
   await existingOtp.save({
     validateBeforeSave: false,
@@ -103,6 +110,16 @@ const registerDoner = asyncHandler(async (req, res) => {
     whatsapp,
     address,
   } = req.body;
+
+  console.log("fullName", fullName);
+  console.log("dob", dob);
+  console.log("weight", weight);
+  console.log("gender", gender);
+  console.log("bloodGroup", bloodGroup);
+  console.log("email", email);
+  console.log("phone", phone);
+  console.log("whatsapp", whatsapp);
+  console.log("address", address);
 
   if (
     !fullName ||
@@ -143,7 +160,14 @@ const registerDoner = asyncHandler(async (req, res) => {
     phoneVerified: verifiedPhone ? true : false,
     emailVerified: verifiedEmail ? true : false,
     whatsapp,
-    address,
+    address: {
+      addressLine1: address.addressLine1,
+      addressLine2: address.addressLine2,
+      state: address.state,
+      city: address.city,
+      pincode: address.pincode,
+      addressType: "Donor",
+    },
   });
 
   // check if user was created and deselect password and refreshToken
