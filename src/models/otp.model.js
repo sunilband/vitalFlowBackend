@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { sendMail } from "../utils/mailService.js";
 import otpGenerator from "otp-generator";
+import { Donor } from "./donor.model.js";
 
 const otpSchema = new Schema(
   {
@@ -49,6 +50,7 @@ otpSchema.statics.deleteOldOtps = async function () {
   await this.deleteMany({ expiry: { $lt: new Date() } });
 };
 
+// Send otp on save
 otpSchema.pre("save", async function (next) {
   if (this.isNew) {
     this.otp = otpGenerator.generate(6, {
@@ -62,7 +64,6 @@ otpSchema.pre("save", async function (next) {
     }
     if (this.phone && this.status === "pending") {
       // TODO: send OTP to phone
-      this.otp = "123456";
     }
     this.expiry = new Date(new Date().getTime() + 5 * 60000); // 5 minutes
   }
