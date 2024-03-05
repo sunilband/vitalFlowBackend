@@ -111,16 +111,6 @@ const registerDoner = asyncHandler(async (req, res) => {
     address,
   } = req.body;
 
-  console.log("fullName", fullName);
-  console.log("dob", dob);
-  console.log("weight", weight);
-  console.log("gender", gender);
-  console.log("bloodGroup", bloodGroup);
-  console.log("email", email);
-  console.log("phone", phone);
-  console.log("whatsapp", whatsapp);
-  console.log("address", address);
-
   if (
     !fullName ||
     !dob ||
