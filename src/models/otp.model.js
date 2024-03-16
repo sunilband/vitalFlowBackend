@@ -54,8 +54,10 @@ otpSchema.statics.deleteOldOtps = async function () {
 otpSchema.pre("save", async function (next) {
   if (this.isNew) {
     this.otp = otpGenerator.generate(6, {
-      upperCaseAlphabets: false,
+      digits: true, // only digits
       specialChars: false,
+      lowerCaseAlphabets: false,
+      upperCaseAlphabets: false,
     });
     const subject = "OTP for verification";
     const html = `<p>Your OTP for verification is ${this.otp}</p>`;

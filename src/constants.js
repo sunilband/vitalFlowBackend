@@ -2,8 +2,10 @@ const DB_NAME = "VitalFlow";
 const PORT = process.env.PORT || 8000;
 
 const cookieOptions = {
+  path: "/",
   httpOnly: true,
-  secure: true,
+  secure: process.env.NODE_ENV === "development" ? false : true,
+  // sameSite: 'None',
 };
 
 // rate limiting

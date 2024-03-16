@@ -6,22 +6,6 @@ import jwt from "jsonwebtoken";
 import { Otp } from "../models/otp.model.js";
 import { Donor } from "../models/donor.model.js";
 
-const generateAuthAndRefreshTokens = async (_id, user) => {
-  try {
-    // user is optional
-    let fetchedUser = user ? user : await User.findById(_id);
-    const accessToken = await fetchedUser.generateAuthToken();
-    const refreshToken = await fetchedUser.generateRefreshToken();
-    fetchedUser.refreshToken = refreshToken;
-    await fetchedUser.save({
-      validateBeforeSave: false,
-    });
-    return { accessToken, refreshToken };
-  } catch (error) {
-    throw new ApiError(500, "Something went wrong while generating tokens");
-  }
-};
-
 // Send OTP
 const sendPhoneOTP = asyncHandler(async (req, res) => {
   const { phone } = req.body;
@@ -111,16 +95,6 @@ const registerDoner = asyncHandler(async (req, res) => {
     address,
   } = req.body;
 
-  console.log("fullName", fullName);
-  console.log("dob", dob);
-  console.log("weight", weight);
-  console.log("gender", gender);
-  console.log("bloodGroup", bloodGroup);
-  console.log("email", email);
-  console.log("phone", phone);
-  console.log("whatsapp", whatsapp);
-  console.log("address", address);
-
   if (
     !fullName ||
     !dob ||
@@ -179,8 +153,17 @@ const registerDoner = asyncHandler(async (req, res) => {
     throw new ApiError(500, "User creation failed");
   }
 
+  const accessToken = await createdUser.generateAuthToken();
+  const refreshToken = await createdUser.generateRefreshToken();
+
+  if (!accessToken || !refreshToken) {
+    throw new ApiError(500, "Token generation failed");
+  }
+
   res
     .status(200)
+    .cookie("accessToken", accessToken, cookieOptions)
+    .cookie("refreshToken", refreshToken, cookieOptions)
     .json(new ApiResponse(200, createdUser, "User created successfully"));
 });
 
@@ -349,73 +332,6 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "User details updated successfully"));
 });
 
-const updateAvatarAndOrCover = asyncHandler(async (req, res) => {
-  if (!req.files) {
-    throw new ApiError(400, "Please provide files to upload");
-  }
-  const { avatar, coverImage } = req.files;
-  const { _id } = req.user;
-
-  let avatarLocalPath = "";
-  let coverImageLocalPath = "";
-
-  if (avatar) {
-    avatarLocalPath = avatar[0]?.path;
-  }
-
-  if (coverImage) {
-    coverImageLocalPath = coverImage[0]?.path;
-  }
-
-  if (!avatarLocalPath && !coverImageLocalPath) {
-    throw new ApiError(400, "Please provide avatar or coverImage");
-  }
-
-  const avatarUploaded = await uploadOnCloudinary(avatarLocalPath);
-  const coverImageUploaded = await uploadOnCloudinary(coverImageLocalPath);
-
-  if (!avatarUploaded && !coverImageUploaded) {
-    throw new ApiError(400, "Upload failed");
-  }
-
-  const user = await User.findById(_id);
-
-  if (avatarUploaded) {
-    if (user.avatar) {
-      const deletedAvatar = await deleteFromCloudinary(user.avatar);
-      if (!deletedAvatar) {
-        throw new ApiError(400, "Update failed while deleting old avatar");
-      }
-      user.avatar = avatarUploaded.url;
-    }
-  }
-
-  if (coverImageUploaded) {
-    if (user.coverImage) {
-      const deletedCover = await deleteFromCloudinary(user.coverImage);
-      if (!deletedCover) {
-        throw new ApiError(400, "Update failed while deleting old coverImage");
-      }
-      user.coverImage = coverImageUploaded.url;
-    }
-  }
-
-  await user.save({
-    validateBeforeSave: false,
-  });
-
-  res.status(200).json(
-    new ApiResponse(
-      200,
-      user,
-      `
-      ${avatarUploaded ? "Avatar" : ""} 
-      ${coverImageUploaded ? "Cover Image" : ""}
-      updated successfully`
-    )
-  );
-});
-
 export {
   sendPhoneOTP,
   sendEmailOTP,
@@ -427,5 +343,4 @@ export {
   changeUserpassword,
   getCurrentUser,
   updateAccountDetails,
-  updateAvatarAndOrCover,
 };

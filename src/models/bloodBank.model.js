@@ -211,6 +211,11 @@ const bloodBankSchema = new Schema(
       trim: true,
       default: "N/A",
     },
+    status: {
+      type: String,
+      enum: ["Pending", "Approved"],
+      default: "Pending",
+    },
   },
   {
     timestamps: true,

@@ -151,9 +151,13 @@ donorSchema.methods.generateAuthToken = async function () {
   const token = await jwt.sign(
     {
       _id: this._id,
-      donorname: this.donorname,
-      fullName: this.fullName,
+      dob: this.dob,
       email: this.email,
+      phone: this.phone,
+      bloodGroup: this.bloodGroup,
+      gender: this.gender,
+      fullName: this.fullName,
+      whatsapp: this.whatsapp,
     },
     process.env.ACCESS_TOKEN_SECRET,
     { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
