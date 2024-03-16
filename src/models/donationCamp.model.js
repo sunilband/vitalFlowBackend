@@ -129,4 +129,4 @@ const donationCampSchema = new Schema(
   }
 );
 
-const DonationCamp = mongoose.model("DonationCamp", donationCampSchema);
+export const DonationCamp = mongoose.model("DonationCamp", donationCampSchema);

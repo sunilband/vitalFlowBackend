@@ -4,7 +4,8 @@ import {
   sendEmailOTP,
   verifyOTP,
   registerDoner,
-  loginUser,
+  loginOTP,
+  loginDonor,
   logoutUser,
   refreshAccessToken,
   changeUserpassword,
@@ -17,18 +18,18 @@ import { rateLimit } from "../middlewares/ratelimiter.middleware.js";
 
 const router = Router();
 
+// POST
 router.route("/send-phone-otp").post(rateLimit(50), sendPhoneOTP);
 router.route("/send-email-otp").post(rateLimit(50), sendEmailOTP);
 router.route("/verify-otp").post(rateLimit(50), verifyOTP);
 router.route("/register-doner").post(rateLimit(50), registerDoner);
+router.route("/send-login-otp").post(rateLimit(50), loginOTP);
+router.route("/login-donor").post(rateLimit(50), loginDonor);
 
-router.route("/get-donor").get(rateLimit(50), verifyJWT, getCurrentUser);
-// router.route("/login").post(rateLimit(3), loginUser);
-
-// router.route("/refresh-token").get(rateLimit(1), refreshAccessToken);
-
-// // secured routes (user must have token)
-// router.route("/logout").get(rateLimit(1), verifyJWT, logoutUser);
+// GET
+router.route("/get-donor").get(rateLimit(50), verifyJWT, getCurrentUser); //auth
+router.route("/logout").get(rateLimit(50), verifyJWT, logoutUser); //auth
+router.route("/refresh-token").get(rateLimit(50), refreshAccessToken);
 
 // router
 //   .route("/change-password")

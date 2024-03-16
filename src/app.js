@@ -34,6 +34,6 @@ app.use(cookieParser());
 
 // routes
 import donerRouter from "./routes/doner.routes.js";
-app.use("/api/v1/", donerRouter);
+app.use("/api/v1/donor/", donerRouter);
 
 export { app };

@@ -12,4 +12,6 @@ const cookieOptions = {
 const maxRequests = 2;
 const timeWindow = 10;
 
+// sms service
+
 export { DB_NAME, PORT, cookieOptions, maxRequests, timeWindow };
