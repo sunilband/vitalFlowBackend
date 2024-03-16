@@ -32,8 +32,18 @@ app.use(express.static("public"));
 // Read and set user cookies
 app.use(cookieParser());
 
-// routes
+// ------------all routes---------------
+
+// SUPERADMIN
+import superAdminRouter from "./routes/superadmin.routes.js";
+app.use("/api/v1/superadmin/", superAdminRouter);
+
+// DONOR
 import donerRouter from "./routes/doner.routes.js";
 app.use("/api/v1/donor/", donerRouter);
+
+// BLOODBANK
+import bloodBankRouter from "./routes/bloodbank.routes.js";
+app.use("/api/v1/bloodbank/", bloodBankRouter);
 
 export { app };

@@ -12,7 +12,6 @@ import {
   getCurrentUser,
   updateAccountDetails,
 } from "../controllers/doner.controller.js";
-// import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { rateLimit } from "../middlewares/ratelimiter.middleware.js";
 

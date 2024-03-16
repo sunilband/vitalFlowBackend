@@ -257,4 +257,4 @@ bloodBankSchema.methods.generateRefreshToken = function () {
   return refreshToken;
 };
 
-const BloodBank = mongoose.model("BloodBank", bloodBankSchema);
+export const BloodBank = mongoose.model("BloodBank", bloodBankSchema);
