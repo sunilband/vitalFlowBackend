@@ -1,6 +1,8 @@
 import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import { addressSchema } from "./helperModels/address.model.js";
+import { sendMail } from "../utils/mailService.js";
 
 const bloodBankSchema = new Schema(
   {
@@ -49,6 +51,7 @@ const bloodBankSchema = new Schema(
     },
     password: {
       type: String,
+      select: false,
       required: true,
       validate: {
         validator: function (v) {
@@ -56,7 +59,8 @@ const bloodBankSchema = new Schema(
             v
           );
         },
-        message: (props) => `${props.value} is not a valid password`,
+        message: () =>
+          `Password is not valid. It must contain at least one lowercase letter, one uppercase letter, one digit, one special character (@$!%*?&), and be at least 8 characters long.`,
       },
     },
     license: {
@@ -70,8 +74,8 @@ const bloodBankSchema = new Schema(
       required: true,
     },
     address: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Address",
+      type: addressSchema,
+      required: true,
     },
     website: {
       type: String,
@@ -230,6 +234,16 @@ bloodBankSchema.pre("save", async function (next) {
   next();
 });
 
+//create a pre save hook for initial creation of blood bank
+bloodBankSchema.pre("save", async function (next) {
+  const subject = "Welcome to Vital~Flow!";
+  const html = `<p>Thank you for registering your blood bank with Vital~Flow. Your account is under review. You will be notified once your account is approved.</p>`;
+  if (this.isNew) {
+    await sendMail(this.email, subject, html);
+  }
+  next();
+});
+
 //check password
 bloodBankSchema.methods.checkPassword = async function (password) {
   const bloodBank = this;
@@ -242,7 +256,7 @@ bloodBankSchema.methods.generateAuthToken = function () {
   const bloodBank = this;
   const token = jwt.sign(
     { _id: bloodBank._id.toString(), role: "bloodBank" },
-    process.env.JWT_SECRET
+    process.env.ACCESS_TOKEN_SECRET
   );
   return token;
 };

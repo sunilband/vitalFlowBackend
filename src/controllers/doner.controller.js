@@ -14,9 +14,14 @@ const sendPhoneOTP = asyncHandler(async (req, res) => {
   } else if (!/^[6-9]\d{9}$/.test(phone)) {
     throw new ApiError(400, "Please provide a valid phone number");
   }
-  await Otp.deleteOldOtps();
-  const existingOtp = await Otp.findOne({ phone, status: "pending" });
-
+  // await Otp.deleteOldOtps();
+  const existingOtp = await Otp.find({
+    phone,
+    status: "pending",
+    expiry: { $gt: new Date() },
+    type: "verification",
+  });
+  console.log("existing", existingOtp);
   if (existingOtp) {
     throw new ApiError(409, `OTP already sent to ${phone}`);
   }
@@ -30,7 +35,7 @@ const sendPhoneOTP = asyncHandler(async (req, res) => {
 
 // Send OTP Email
 const sendEmailOTP = asyncHandler(async (req, res) => {
-  await Otp.deleteOldOtps();
+  // await Otp.deleteOldOtps();
   const { email } = req.body;
   if (!email) {
     throw new ApiError(400, "Please provide a email ");
@@ -38,10 +43,26 @@ const sendEmailOTP = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Please provide a valid email ");
   }
 
-  const existingOtp = await Otp.findOne({ email, status: "pending" });
+  const existingUser = await Donor.findOne({ email, emailVerified: true });
+
+  if (existingUser) {
+    throw new ApiError(409, `Email already registered`);
+  }
+
+  const existingOtp = await Otp.findOne({
+    email,
+    status: "pending",
+    expiry: { $gt: new Date() },
+    type: "verification",
+  });
+
+  console.log("existing", existingOtp);
 
   if (existingOtp) {
-    throw new ApiError(409, `OTP already sent to ${email}`);
+    throw new ApiError(
+      409,
+      `OTP already sent to ${email}, please check your email`
+    );
   }
 
   const newOtp = await Otp.create({ email, type: "verification" });

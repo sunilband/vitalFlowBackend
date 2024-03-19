@@ -7,7 +7,6 @@ import { Otp } from "../models/otp.model.js";
 import { sendMail } from "../utils/mailService.js";
 
 const sendEmailVerifyOTP = asyncHandler(async (req, res, next) => {
-  await Otp.deleteOldOtps();
   const { email } = req.body;
   if (!email) {
     throw new ApiError(400, "Please provide a email ");
@@ -15,15 +14,24 @@ const sendEmailVerifyOTP = asyncHandler(async (req, res, next) => {
     throw new ApiError(400, "Please provide a valid email ");
   }
 
-  const existingBloodBank = await BloodBank.findOne({ email });
-  if (existingBloodBank) {
+  const existingUser = await BloodBank.findOne({ email, emailVerified: true });
+
+  if (existingUser) {
     throw new ApiError(409, `Email already registered`);
   }
 
-  const existingOtp = await Otp.findOne({ email, status: "pending" });
+  const existingOtp = await Otp.findOne({
+    email,
+    status: "pending",
+    expiry: { $gt: new Date() },
+    type: "verification",
+  });
 
   if (existingOtp) {
-    throw new ApiError(409, `OTP already sent to ${email}`);
+    throw new ApiError(
+      409,
+      `OTP already sent to ${email}, please check your email`
+    );
   }
 
   const newOtp = await Otp.create({ email, type: "verification" });
@@ -33,6 +41,30 @@ const sendEmailVerifyOTP = asyncHandler(async (req, res, next) => {
     .json(new ApiResponse(200, {}, `OTP sent successfully to ${email}`));
 });
 
+// -------------verify otp---------------
+const verifyOTP = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+  //  check if phone or email is present and otp must be present
+  if (!email || !otp) {
+    throw new ApiError(400, "Please provide all the required fields");
+  }
+
+  let existingOtp = await Otp.findOne({
+    email,
+    otp,
+    status: "pending",
+  });
+
+  if (existingOtp) existingOtp.status = "verified";
+
+  if (!existingOtp) throw new ApiError(400, "Invalid OTP");
+
+  await existingOtp.save({
+    validateBeforeSave: false,
+  });
+  res.status(200).json(new ApiResponse(200, {}, "OTP verified successfully"));
+});
+// -------------register blood bank---------------
 const registerBloodBank = asyncHandler(async (req, res, next) => {
   const {
     name,
@@ -41,8 +73,8 @@ const registerBloodBank = asyncHandler(async (req, res, next) => {
     contactPersonName,
     contactPersonPhone,
     email,
-    licence,
-    licenceValidity,
+    license,
+    licenseValidity,
     address,
     website,
     componentFacility,
@@ -64,8 +96,8 @@ const registerBloodBank = asyncHandler(async (req, res, next) => {
     !contactPersonName ||
     !contactPersonPhone ||
     !email ||
-    !licence ||
-    !licenceValidity ||
+    !license ||
+    !licenseValidity ||
     !password ||
     !confirmPassword
   ) {
@@ -76,6 +108,30 @@ const registerBloodBank = asyncHandler(async (req, res, next) => {
     throw new ApiError(400, "Passwords do not match");
   }
 
+  if (
+    !address ||
+    !address.addressLine1 ||
+    !address.state ||
+    !address.city ||
+    !address.pincode
+  ) {
+    throw new ApiError(400, "All address fields are required");
+  }
+
+  const verifiedEmail = await Otp.findOne({
+    email,
+    status: "verified",
+  });
+
+  if (!verifiedEmail) {
+    throw new ApiError(400, "Please verify your email first");
+  }
+
+  const existingUser = await BloodBank.findOne({ email });
+  if (existingUser) {
+    throw new ApiError(400, "User already exists");
+  }
+
   const bloodBank = await BloodBank.create({
     name,
     parentHospitalName,
@@ -83,8 +139,8 @@ const registerBloodBank = asyncHandler(async (req, res, next) => {
     contactPersonName,
     contactPersonPhone,
     email,
-    licence,
-    licenceValidity,
+    license,
+    licenseValidity,
     address: {
       addressLine1: address.addressLine1,
       addressLine2: address.addressLine2,
@@ -106,19 +162,17 @@ const registerBloodBank = asyncHandler(async (req, res, next) => {
     password,
   });
 
-  const mail = await sendMail(
-    email,
-    "Blood Bank Registration",
-    `<h1>Thank you for registering with Vital~Flow</h1>
-    <p>Your registration is pending for approval, you will be notified once it is approved</p>`
-  );
+  const accessToken = await bloodBank.generateAuthToken();
+  const refreshToken = await bloodBank.generateRefreshToken();
 
-  if (!mail) {
-    throw new ApiError(500, "Error sending email");
+  if (!accessToken || !refreshToken) {
+    throw new ApiError(500, "Token generation failed");
   }
 
   res
     .status(201)
+    .cookie("accessToken", accessToken, cookieOptions)
+    .cookie("refreshToken", refreshToken, cookieOptions)
     .json(
       new ApiResponse(
         201,
@@ -127,5 +181,49 @@ const registerBloodBank = asyncHandler(async (req, res, next) => {
       )
     );
 });
+// -------------login blood bank---------------
+const loginBloodBank = asyncHandler(async (req, res, next) => {
+  const { email, password } = req.body;
 
-export { sendEmailVerifyOTP, registerBloodBank };
+  if (!password || !email) {
+    throw new ApiError(400, "Please provide all the required fields");
+  }
+
+  let existingUser = await BloodBank.findOne({ email }).select("+password");
+
+  if (!existingUser) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const validPassword = await existingUser.checkPassword(password);
+
+  if (!validPassword) {
+    throw new ApiError(400, "Invalid credentials");
+  }
+
+  const accessToken = await existingUser.generateAuthToken();
+  const refreshToken = await existingUser.generateRefreshToken();
+
+  if (!accessToken || !refreshToken) {
+    throw new ApiError(500, "Token generation failed");
+  }
+
+  res
+    .status(200)
+    .cookie("accessToken", accessToken, cookieOptions)
+    .cookie("refreshToken", refreshToken, cookieOptions)
+    .json(new ApiResponse(200, existingUser, "User logged in successfully"));
+});
+// -------------Get blood bank---------------
+const getBloodBank = asyncHandler(async (req, res, next) => {
+  const user = req.user;
+  res.status(200).json(new ApiResponse(200, user, "User profile fetched"));
+});
+
+export {
+  sendEmailVerifyOTP,
+  verifyOTP,
+  registerBloodBank,
+  loginBloodBank,
+  getBloodBank,
+};
