@@ -46,4 +46,8 @@ app.use("/api/v1/donor/", donerRouter);
 import bloodBankRouter from "./routes/bloodbank.routes.js";
 app.use("/api/v1/bloodbank/", bloodBankRouter);
 
+// CAMP
+import campRouter from "./routes/camp.routes.js";
+app.use("/api/v1/camp/", campRouter);
+
 export { app };

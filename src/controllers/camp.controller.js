@@ -66,40 +66,41 @@ const verifyOTP = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, {}, "OTP verified successfully"));
 });
 
-// -------------register blood bank---------------
-const registerBloodBank = asyncHandler(async (req, res, next) => {
+// -------------register donation camp---------------
+const registerDonationCamp = asyncHandler(async (req, res, next) => {
   const {
-    name,
-    parentHospitalName,
-    category,
-    contactPersonName,
-    contactPersonPhone,
-    email,
-    license,
-    licenseValidity,
+    organizationName,
+    organizationType,
+    organizerName,
+    organizerMobileNumber,
+    organizerEmail,
+    coOrganizerName,
+    coOrganizerMobileNumber,
+    campName,
     address,
-    website,
-    componentFacility,
-    apheresisFacility,
-    helplineNumber,
-    acceptedDonorType,
-    acceptedDonationType,
-    acceptedComponentType,
-    bagType,
-    ttiType,
+    bloodbank,
+    campDate,
+    campStartTime,
+    campEndTime,
+    estimatedParticipants,
+    supporter,
     remarks,
     password,
     confirmPassword,
   } = req.body;
 
   if (
-    !name ||
-    !category ||
-    !contactPersonName ||
-    !contactPersonPhone ||
-    !email ||
-    !license ||
-    !licenseValidity ||
+    !organizationName ||
+    !organizationType ||
+    !organizerName ||
+    !organizerMobileNumber ||
+    !organizerEmail ||
+    !campName ||
+    !campDate ||
+    !campStartTime ||
+    !address ||
+    !campEndTime ||
+    !estimatedParticipants ||
     !password ||
     !confirmPassword
   ) {
@@ -121,7 +122,7 @@ const registerBloodBank = asyncHandler(async (req, res, next) => {
   }
 
   const verifiedEmail = await Otp.findOne({
-    email,
+    email: organizerEmail,
     status: "verified",
   });
 
@@ -129,47 +130,47 @@ const registerBloodBank = asyncHandler(async (req, res, next) => {
     throw new ApiError(400, "Please verify your email first");
   }
 
-  const existingUser = await BloodBank.findOne({ email });
+  const existingUser = await DonationCamp.findOne({ organizerEmail });
   if (existingUser) {
     throw new ApiError(400, "User already exists");
   }
 
-  const bloodBank = await BloodBank.create({
-    name,
-    parentHospitalName,
-    category,
-    contactPersonName,
-    contactPersonPhone,
-    email,
-    license,
-    licenseValidity,
+  const donationCamp = await DonationCamp.create({
+    organizationName,
+    organizationType,
+    organizerName,
+    organizerMobileNumber,
+    organizerEmail,
+    coOrganizerName,
+    coOrganizerMobileNumber,
+    campName,
     address: {
       addressLine1: address.addressLine1,
       addressLine2: address.addressLine2,
       state: address.state,
       city: address.city,
       pincode: address.pincode,
-      addressType: "Bloodbank",
+      addressType: "Camp",
     },
-    website,
-    componentFacility,
-    apheresisFacility,
-    helplineNumber,
-    acceptedDonorType,
-    acceptedDonationType,
-    acceptedComponentType,
-    bagType,
-    ttiType,
+    bloodbank,
+    campDate,
+    campStartTime,
+    campEndTime,
+    estimatedParticipants,
+    supporter,
     remarks,
     password,
   });
 
-  const accessToken = await bloodBank.generateAuthToken();
-  const refreshToken = await bloodBank.generateRefreshToken();
+  const accessToken = await donationCamp.generateAuthToken();
+  const refreshToken = await donationCamp.generateRefreshToken();
 
   if (!accessToken || !refreshToken) {
     throw new ApiError(500, "Token generation failed");
   }
+
+  const donationCampObject = donationCamp.toObject();
+  delete donationCampObject.password;
 
   res
     .status(201)
@@ -178,12 +179,11 @@ const registerBloodBank = asyncHandler(async (req, res, next) => {
     .json(
       new ApiResponse(
         201,
-        { bloodBank },
-        "Blood Bank registered successfully , Awaiting admin approval"
+        { donationCampObject },
+        "Donation Camp registered successfully , Awaiting blood bank approval"
       )
     );
 });
-
 // -------------login blood bank---------------
 const loginBloodBank = asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
@@ -217,39 +217,6 @@ const loginBloodBank = asyncHandler(async (req, res, next) => {
     .cookie("refreshToken", refreshToken, cookieOptions)
     .json(new ApiResponse(200, existingUser, "User logged in successfully"));
 });
-
-// -------------Get all camps---------------
-const getCamps = asyncHandler(async (req, res, next) => {
-  const query = {};
-
-  if (req.query.status) query.status = req.query.status;
-  if (req.query.organizationType)
-    query.organizationType = req.query.organizationType;
-  if (req.query.date) query.category = req.query.date;
-
-  if (req.query.address) {
-    query["address.state"] = req.query.address.state;
-    query["address.city"] = req.query.address.city;
-  }
-  const bloodBankId = req.user._id.toHexString();
-  query.bloodbank = bloodBankId;
-  const camps = await DonationCamp.find(query);
-  res.status(200).json(new ApiResponse(200, { camps }));
-});
-
-// -------------Change Camp status---------------
-const changeCampStatus = asyncHandler(async (req, res, next) => {
-  const status = req.query.status;
-  const campId = req.query.id;
-  const camp = await DonationCamp.findById(campId);
-  if (!camp) {
-    throw new ApiError(404, "Blood Bank not found");
-  }
-  camp.status = status;
-  await camp.save();
-  res.status(200).json(new ApiResponse(200, { camp }));
-});
-
 // -------------Get blood bank---------------
 const getBloodBank = asyncHandler(async (req, res, next) => {
   const user = req.user;
@@ -268,10 +235,9 @@ const logoutBloodBank = asyncHandler(async (req, res, next) => {
 export {
   sendEmailVerifyOTP,
   verifyOTP,
-  registerBloodBank,
-  loginBloodBank,
-  getCamps,
-  changeCampStatus,
-  getBloodBank,
-  logoutBloodBank,
+  registerDonationCamp,
+  // registerBloodBank,
+  // loginBloodBank,
+  // getBloodBank,
+  // logoutBloodBank,
 };

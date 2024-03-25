@@ -14,7 +14,6 @@ const bloodBankSchema = new Schema(
     parentHospitalName: {
       type: String,
       trim: true,
-      default: "N/A",
     },
     category: {
       type: String,
@@ -86,7 +85,6 @@ const bloodBankSchema = new Schema(
         },
         message: (props) => `${props.value} is not a valid website`,
       },
-      default: "N/A",
     },
     componentFacility: {
       type: Boolean,
@@ -105,7 +103,6 @@ const bloodBankSchema = new Schema(
         },
         message: (props) => `${props.value} is not a valid phone number`,
       },
-      default: "N/A",
     },
     acceptedDonorType: {
       selectedOptions: {
@@ -213,11 +210,10 @@ const bloodBankSchema = new Schema(
     remarks: {
       type: String,
       trim: true,
-      default: "N/A",
     },
     status: {
       type: String,
-      enum: ["Pending", "Approved"],
+      enum: ["Pending", "Approved", "Rejected"],
       default: "Pending",
     },
   },
