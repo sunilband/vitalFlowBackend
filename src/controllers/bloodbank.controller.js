@@ -220,10 +220,20 @@ const getBloodBank = asyncHandler(async (req, res, next) => {
   res.status(200).json(new ApiResponse(200, user, "User profile fetched"));
 });
 
+// -------------logout blood bank---------------
+const logoutBloodBank = asyncHandler(async (req, res, next) => {
+  res
+    .status(200)
+    .clearCookie("accessToken")
+    .clearCookie("refreshToken")
+    .json(new ApiResponse(200, {}, "User logged out successfully"));
+});
+
 export {
   sendEmailVerifyOTP,
   verifyOTP,
   registerBloodBank,
   loginBloodBank,
   getBloodBank,
+  logoutBloodBank,
 };
