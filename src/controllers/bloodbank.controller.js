@@ -4,8 +4,9 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { cookieOptions } from "../constants.js";
 import { BloodBank } from "../models/bloodBank.model.js";
 import { Otp } from "../models/otp.model.js";
-import { sendMail } from "../utils/mailService.js";
 import { DonationCamp } from "../models/donationCamp.model.js";
+import { Donation } from "../models/donation.model.js";
+import { Donor } from "../models/donor.model.js";
 
 const sendEmailVerifyOTP = asyncHandler(async (req, res, next) => {
   const { email } = req.body;
@@ -265,6 +266,62 @@ const logoutBloodBank = asyncHandler(async (req, res, next) => {
     .json(new ApiResponse(200, {}, "User logged out successfully"));
 });
 
+// -------------assign recipient to donation---------------
+const assignRecipient = asyncHandler(async (req, res, next) => {
+  let { donationId, recipientId, fullName, phone, email, componentGiven } =
+    req.body;
+
+  if (
+    !donationId ||
+    (!recipientId && (!fullName || !phone || !email)) ||
+    !componentGiven
+  ) {
+    throw new Error("Incomplete details");
+  }
+
+  const donation = await Donation.findById(donationId);
+
+  if (!donation) {
+    throw new Error("Donation not found");
+  }
+
+  let recipient;
+  if (recipientId) {
+    recipient = await Donor.findById(recipientId);
+
+    if (!recipient) {
+      throw new Error("Recipient not found");
+    }
+  }
+
+  if (recipient) {
+    fullName = recipient.fullName;
+    phone = recipient.phone;
+    email = recipient.email;
+
+    donation.recipient = {
+      registered: true,
+      recipientId,
+      fullName,
+      phone,
+      email,
+      componentGiven,
+    };
+  } else {
+    donation.recipient = {
+      registered: false,
+      fullName,
+      phone,
+      email,
+      componentGiven,
+    };
+  }
+
+  await donation.save();
+
+  res.status(200).json(new ApiResponse(200, { donation }));
+});
+
 export {
   sendEmailVerifyOTP,
   verifyOTP,
@@ -274,4 +331,5 @@ export {
   changeCampStatus,
   getBloodBank,
   logoutBloodBank,
+  assignRecipient,
 };

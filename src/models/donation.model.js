@@ -1,16 +1,13 @@
 import mongoose, { Schema } from "mongoose";
+import { DonationCamp } from "./donationCamp.model.js";
+import { Donor } from "./donor.model.js";
+import { sendMail } from "../utils/mailService.js";
 
 const donationSchema = new Schema(
   {
     donorId: {
       type: Schema.Types.ObjectId,
       ref: "Donor",
-      required: true,
-    },
-
-    type: {
-      type: String,
-      enum: ["Donate", "Recieve"],
       required: true,
     },
 
@@ -55,13 +52,19 @@ const donationSchema = new Schema(
         type: Schema.Types.ObjectId,
         ref: "Donor",
         required: function () {
-          return this.type === "Recieve";
+          return this.recipient.registered;
         },
       },
-      name: {
+      fullName: {
         type: String,
-        required: function () {
-          return this.type === "Recieve";
+      },
+      email: {
+        type: String,
+        validate: {
+          validator: function (v) {
+            return /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/.test(v);
+          },
+          message: (props) => `${props.value} is not a valid email`,
         },
       },
       phone: {
@@ -72,15 +75,9 @@ const donationSchema = new Schema(
           },
           message: (props) => `${props.value} is not a valid phone number`,
         },
-        required: function () {
-          return this.type === "Recieve";
-        },
       },
       componentGiven: {
         type: String,
-        required: function () {
-          return this.type === "Recieve";
-        },
       },
     },
 
@@ -92,11 +89,44 @@ const donationSchema = new Schema(
     campId: {
       type: Schema.Types.ObjectId,
       ref: "DonationCamp",
+      required: true,
     },
   },
   {
     timestamps: true,
   }
 );
+
+donationSchema.pre("save", async function (next) {
+  //checking if camp exists
+  const camp = await DonationCamp.findById(this.campId);
+  if (!camp) {
+    throw new Error("Camp ID does not exist");
+  }
+
+  //donation creation mail
+  const subject = "Donation Acknowledgement";
+  const html = `<p>Thank you for donating using Vital~Flow! Whenever the donation is used to save lives you will be notified!</p>`;
+  const donor = await Donor.findById(this.donorId);
+  if (this.isNew) {
+    if (donor.email && donor.emailVerified) {
+      await sendMail(donor.email, subject, html);
+    }
+  }
+  next();
+});
+
+//sending mail to donor when donation is used
+donationSchema.post("save", async function (doc, next) {
+  if (doc.recipient && doc.recipient.recipientId) {
+    const donor = await Donor.findById(doc.donorId);
+    const subject = "Donation Update";
+    const html = `<p>Your donation has been used to save a life! Thank you for your contribution.</p>`;
+    if (donor.email && donor.emailVerified) {
+      await sendMail(donor.email, subject, html);
+    }
+  }
+  next();
+});
 
 export const Donation = mongoose.model("Donation", donationSchema);

@@ -8,6 +8,7 @@ import {
   logoutBloodBank,
   changeCampStatus,
   getCamps,
+  assignRecipient,
 } from "../controllers/bloodbank.controller.js";
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -30,5 +31,8 @@ router.route("/logout").get(rateLimit(50), verifyJWT, logoutBloodBank); //auth
 router
   .route("/change-camp-status")
   .put(rateLimit(50), verifyJWT, changeCampStatus); //auth
+router
+  .route("/assign-recipient")
+  .put(rateLimit(50), verifyJWT, assignRecipient); //auth
 
 export default router;
