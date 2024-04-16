@@ -7,6 +7,7 @@ import { Otp } from "../models/otp.model.js";
 import { DonationCamp } from "../models/donationCamp.model.js";
 import { Donation } from "../models/donation.model.js";
 import { Donor } from "../models/donor.model.js";
+import mongoose from "mongoose";
 
 const sendEmailVerifyOTP = asyncHandler(async (req, res, next) => {
   const { email } = req.body;
@@ -268,13 +269,21 @@ const logoutBloodBank = asyncHandler(async (req, res, next) => {
 
 // -------------assign recipient to donation---------------
 const assignRecipient = asyncHandler(async (req, res, next) => {
-  let { donationId, recipientId, fullName, phone, email, componentGiven } =
-    req.body;
+  let {
+    donationId,
+    recipientId,
+    fullName,
+    phone,
+    email,
+    componentGiven,
+    componentQuantityGiven,
+  } = req.body;
 
   if (
     !donationId ||
     (!recipientId && (!fullName || !phone || !email)) ||
-    !componentGiven
+    !componentGiven ||
+    !componentQuantityGiven
   ) {
     throw new Error("Incomplete details");
   }
@@ -282,7 +291,7 @@ const assignRecipient = asyncHandler(async (req, res, next) => {
   const donation = await Donation.findById(donationId);
 
   if (!donation) {
-    throw new Error("Donation not found");
+    throw new Error("Donation data was not found");
   }
 
   let recipient;
@@ -294,33 +303,274 @@ const assignRecipient = asyncHandler(async (req, res, next) => {
     }
   }
 
+  // if donation is of whole blood type, then componentGiven should be extracted from whole blood
+  if (donation.componentDetails.componentType === "Whole Blood") {
+    const extractedComponentsFromWholeBlood =
+      donation.extractedComponentsFromWholeBlood.find(
+        (item) => item.component === componentGiven
+      );
+    if (!extractedComponentsFromWholeBlood) {
+      throw new Error(
+        "Component not extracted from whole blood for this donation"
+      );
+    }
+    if (extractedComponentsFromWholeBlood.quantity < componentQuantityGiven) {
+      throw new Error(`The given quantity is more than the extracted quantity`);
+    }
+
+    // there can be previous recipients, so we need to check the remaining quantity as the recipients field is an array.first find what previous recipients have taken the component and then subtract the quantity from the extracted quantity
+    const previousRecipients = donation.recipients.filter(
+      (item) => item.componentGiven === componentGiven
+    );
+    let totalQuantityGiven = 0;
+    previousRecipients.forEach((item) => {
+      totalQuantityGiven += item.componentQuantityGiven;
+    });
+
+    const remainingQuantity =
+      extractedComponentsFromWholeBlood.quantity - totalQuantityGiven;
+
+    if (remainingQuantity < componentQuantityGiven) {
+      throw new Error(
+        `The given quantity is more than the remaining quantity of the extracted component.Its been assigned to previous recipients of this donation. The remaining quantity for ${componentGiven} is ${remainingQuantity} ml.`
+      );
+    }
+  }
+  // if donation is not of whole blood type, then componentGiven should be same as donated component type
+  if (
+    donation.componentDetails.componentType !== "Whole Blood" &&
+    componentGiven !== donation.componentDetails.componentType
+  ) {
+    throw new Error(
+      "The given component type does not match the donated component type"
+    );
+  }
+  // if donation is not of whole blood type, then componentQuantityGiven should be less than or equal to donated component quantity
+  const previousRecipients = donation.recipients.filter(
+    (item) => item.componentGiven === componentGiven
+  );
+  let totalQuantityGiven = 0;
+  previousRecipients.forEach((item) => {
+    totalQuantityGiven += item.componentQuantityGiven;
+  });
+
+  const remainingQuantity =
+    donation.componentDetails.componentQuantity - totalQuantityGiven;
+
+  if (remainingQuantity < componentQuantityGiven) {
+    throw new Error(
+      `The given quantity is more than the remaining quantity of the donated component. Its been assigned to previous recipients of this donation. The remaining quantity is ${remainingQuantity} ml.`
+    );
+  }
+
   if (recipient) {
     fullName = recipient.fullName;
     phone = recipient.phone;
     email = recipient.email;
 
-    donation.recipient = {
+    donation.recipients.push({
       registered: true,
       recipientId,
       fullName,
       phone,
       email,
       componentGiven,
-    };
+      componentQuantityGiven,
+    });
   } else {
-    donation.recipient = {
+    donation.recipients.push({
       registered: false,
       fullName,
       phone,
       email,
       componentGiven,
-    };
+    });
   }
 
   await donation.save();
 
   res.status(200).json(new ApiResponse(200, { donation }));
 });
+
+// -------------Extract components from whole blood---------------
+const extractComponentsFromWholeBlood = asyncHandler(async (req, res, next) => {
+  // the data is coming like this { donationId: '60f9b3b3b3b3b3b3b3b3b3b3', extractedComponentsFromWholeBlood:[{Plasma:200},"Platelet Concentrate":"300"]   }
+  let { donationId, extractedComponentsFromWholeBlood } = req.body;
+  if (!donationId || !extractedComponentsFromWholeBlood) {
+    throw new Error("Incomplete details");
+  }
+  const donation = await Donation.findById(donationId);
+  if (!donation) {
+    throw new Error("Donation data was not found");
+  }
+  if (donation.componentDetails.componentType !== "Whole Blood") {
+    throw new Error("The donation is not of whole blood type.");
+  }
+
+  let componentDetails = donation.componentDetails;
+  let wholeBloodQuantity = componentDetails.componentQuantity; // directly access the componentQuantity
+  let totalExtractedQuantity = 0;
+  extractedComponentsFromWholeBlood.forEach((item) => {
+    totalExtractedQuantity += item.quantity;
+  });
+  if (totalExtractedQuantity > wholeBloodQuantity) {
+    throw new Error(
+      `The total quantity of the extracted components cannot exceed the donated quantity of whole blood. The donated quantity of whole blood is ${wholeBloodQuantity} ml. and the total quantity of the extracted components is ${totalExtractedQuantity} ml.`
+    );
+  }
+  donation.extractedComponentsFromWholeBlood =
+    extractedComponentsFromWholeBlood;
+  await donation.save();
+  res.status(200).json(new ApiResponse(200, { donation }));
+});
+
+// ------------find donations (filterable)------------
+const filterDonations = asyncHandler(async (req, res, next) => {
+  // part of recipient name and donor name can also be searched
+
+  const {
+    recipientfullName,
+    donorFullName,
+    email,
+    bloodGroup,
+    componentType,
+    donationTime,
+  } = req.body;
+  const { _id } = req.user;
+
+  let query = { bloodbankId: _id };
+
+  if (recipientfullName) {
+    query["recipients.fullName"] = {
+      $regex: new RegExp(recipientfullName, "i"),
+    };
+  }
+  if (email) {
+    query["recipients.email"] = email;
+  }
+
+  if (bloodGroup) {
+    query["componentDetails.bloodGroup"] = bloodGroup;
+  }
+
+  if (componentType) {
+    query["componentDetails.componentType"] = componentType;
+  }
+
+  if (donationTime) {
+    query.donationTime = { $gte: new Date(donationTime) };
+  }
+
+  let donations = await Donation.find(query).populate("donorId");
+
+  if (donorFullName) {
+    donations = donations.filter((donation) =>
+      donation.donorId.fullName
+        .toLowerCase()
+        .includes(donorFullName.toLowerCase())
+    );
+  }
+
+  if (!donations) {
+    throw new Error("No donations found");
+  }
+
+  res.status(200).json(new ApiResponse(200, { donations }));
+});
+
+// ---------------TODO:THIS IS INCOMPLETE (NEEDS TO BE COMPLETED) the remaining quantity needs to be minus from donated----------------
+const getOwnAvailableComponentQuantity = asyncHandler(
+  async (req, res, next) => {
+    let { _id } = req.user;
+    console.log(_id);
+    // _id is new ObjectId('65f967279a6c3cc8a62e2f67')
+
+    const availableQuantities = await Donation.aggregate([
+      {
+        $project: {
+          _id: 0,
+          componentType: {
+            $cond: [
+              { $eq: ["$componentDetails.componentType", "Whole Blood"] },
+              {
+                $cond: [
+                  { $isArray: "$extractedComponentsFromWholeBlood" },
+                  {
+                    $map: {
+                      input: "$extractedComponentsFromWholeBlood",
+                      as: "extracted",
+                      in: "$$extracted.component",
+                    },
+                  },
+                  [],
+                ],
+              },
+              "$componentDetails.componentType",
+            ],
+          },
+          componentQuantity: {
+            $cond: [
+              { $eq: ["$componentDetails.componentType", "Whole Blood"] },
+              {
+                $cond: [
+                  { $isArray: "$extractedComponentsFromWholeBlood" },
+                  { $sum: "$extractedComponentsFromWholeBlood.quantity" },
+                  "$componentDetails.componentQuantity",
+                ],
+              },
+              "$componentDetails.componentQuantity",
+            ],
+          },
+        },
+      },
+      {
+        $unwind: "$componentType",
+      },
+      {
+        $group: {
+          _id: "$componentType",
+          totalAvailable: { $sum: "$componentQuantity" },
+        },
+      },
+    ]);
+
+    // Step 2: Calculate Given Quantities
+    const givenQuantities = await Donation.aggregate([
+      {
+        $unwind: "$recipients",
+      },
+      {
+        $group: {
+          _id: "$recipients.componentGiven",
+          totalGiven: { $sum: "$recipients.componentQuantityGiven" },
+        },
+      },
+    ]);
+
+    // Step 3: Subtract Given from Available
+    const remainingQuantities = availableQuantities.map((available) => {
+      const given = givenQuantities.find(
+        (given) => given._id === available._id
+      );
+      const remaining = given
+        ? available.totalAvailable - given.totalGiven
+        : available.totalAvailable;
+      // Ensure remaining quantity is not negative
+      return {
+        componentType: available._id,
+        remainingQuantity: Math.max(0, remaining),
+      };
+    });
+
+    console.log(availableQuantities);
+    console.log("-----------");
+    console.log(givenQuantities);
+    console.log("-----------");
+    console.log(remainingQuantities);
+
+    res.status(200).json(new ApiResponse(200, {}));
+  }
+);
 
 export {
   sendEmailVerifyOTP,
@@ -332,4 +582,7 @@ export {
   getBloodBank,
   logoutBloodBank,
   assignRecipient,
+  getOwnAvailableComponentQuantity,
+  extractComponentsFromWholeBlood,
+  filterDonations,
 };

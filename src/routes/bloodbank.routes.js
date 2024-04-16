@@ -9,6 +9,9 @@ import {
   changeCampStatus,
   getCamps,
   assignRecipient,
+  extractComponentsFromWholeBlood,
+  filterDonations,
+  getOwnAvailableComponentQuantity,
 } from "../controllers/bloodbank.controller.js";
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -26,6 +29,12 @@ router.route("/login").post(rateLimit(50), loginBloodBank);
 router.route("/get-blood-bank").get(rateLimit(50), verifyJWT, getBloodBank); //auth
 router.route("/get-camps").get(rateLimit(50), verifyJWT, getCamps); //auth
 router.route("/logout").get(rateLimit(50), verifyJWT, logoutBloodBank); //auth
+router
+  .route("/get-available-quantity")
+  .get(rateLimit(50), verifyJWT, getOwnAvailableComponentQuantity); //auth
+router
+  .route("/filter-donations")
+  .get(rateLimit(50), verifyJWT, filterDonations); //auth
 
 // PUT
 router
@@ -34,5 +43,8 @@ router
 router
   .route("/assign-recipient")
   .put(rateLimit(50), verifyJWT, assignRecipient); //auth
+router
+  .route("/extract-components")
+  .put(rateLimit(50), verifyJWT, extractComponentsFromWholeBlood); //auth
 
 export default router;

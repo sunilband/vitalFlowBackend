@@ -3,6 +3,24 @@ import { DonationCamp } from "./donationCamp.model.js";
 import { Donor } from "./donor.model.js";
 import { sendMail } from "../utils/mailService.js";
 
+const componentsEnum = [
+  "Cryo Poor Plasma",
+  "Cryoprecipitate",
+  "Fresh Frozen Plasma",
+  "Irradiated RBC",
+  "Leukoreduced RBC",
+  "Packed Red Blood Cells",
+  "Plasma",
+  "Platelet Concentrate",
+  "Platelet Rich Plasma",
+  "Platelets additive solutions",
+  "Random Donor Platelets",
+  "Sagm Packed RBC",
+  "Single Donor Plasma",
+  "Single Donor Platelet",
+  "Whole Blood",
+];
+
 const donationSchema = new Schema(
   {
     donorId: {
@@ -15,23 +33,7 @@ const donationSchema = new Schema(
       componentType: {
         type: String,
         required: true,
-        enum: [
-          "Cryo Poor Plasma",
-          "Cryoprecipitate",
-          "Fresh Frozen Plasma",
-          "Irradiated RBC",
-          "Leukoreduced RBC",
-          "Packed Red Blood Cells",
-          "Plasma",
-          "Platelet Concentrate",
-          "Platelet Rich Plasma",
-          "Platelets additive solutions",
-          "Random Donor Platelets",
-          "Sagm Packed RBC",
-          "Single Donor Plasma",
-          "Single Donor Platelet",
-          "Whole Blood",
-        ],
+        enum: componentsEnum,
       },
       componentQuantity: {
         type: Number,
@@ -42,44 +44,72 @@ const donationSchema = new Schema(
         required: true,
         enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
       },
+      // make extracted field if whole blood is selected and give enum values as what parts are extracted from whole blood
+    },
+    extractedComponentsFromWholeBlood: {
+      // validation for thi field is to be done in controller
+      type: [
+        {
+          component: {
+            type: String,
+            enum: componentsEnum,
+          },
+          quantity: {
+            type: Number,
+          },
+          remainingQuantity: {
+            type: Number,
+            default: function () {
+              return this.quantity;
+            },
+          },
+        },
+      ],
     },
 
-    recipient: {
-      registered: {
-        type: Boolean,
-      },
-      recipientId: {
-        type: Schema.Types.ObjectId,
-        ref: "Donor",
-        required: function () {
-          return this.recipient.registered;
+    recipients: [
+      {
+        registered: {
+          type: Boolean,
         },
-      },
-      fullName: {
-        type: String,
-      },
-      email: {
-        type: String,
-        validate: {
-          validator: function (v) {
-            return /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/.test(v);
+        recipientId: {
+          type: Schema.Types.ObjectId,
+          ref: "Donor",
+          required: function () {
+            return this.registered;
           },
-          message: (props) => `${props.value} is not a valid email`,
         },
-      },
-      phone: {
-        type: String,
-        validate: {
-          validator: function (v) {
-            return /^[0-9]{10}$/.test(v);
+        fullName: {
+          type: String,
+        },
+        email: {
+          type: String,
+          validate: {
+            validator: function (v) {
+              return /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/.test(v);
+            },
+            message: (props) => `${props.value} is not a valid email`,
           },
-          message: (props) => `${props.value} is not a valid phone number`,
+        },
+        phone: {
+          type: String,
+          validate: {
+            validator: function (v) {
+              return /^[0-9]{10}$/.test(v);
+            },
+            message: (props) => `${props.value} is not a valid phone number`,
+          },
+        },
+        componentGiven: {
+          // validation for this field is to be done in controller
+          type: String,
+        },
+        componentQuantityGiven: {
+          // validation for this field is to be done in controller
+          type: Number,
         },
       },
-      componentGiven: {
-        type: String,
-      },
-    },
+    ],
 
     donationTime: {
       type: Date,
@@ -90,6 +120,10 @@ const donationSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "DonationCamp",
       required: true,
+    },
+    bloodbankId: {
+      type: Schema.Types.ObjectId,
+      ref: "BloodBank",
     },
   },
   {
@@ -109,6 +143,9 @@ donationSchema.pre("save", async function (next) {
   const html = `<p>Thank you for donating using Vital~Flow! Whenever the donation is used to save lives you will be notified!</p>`;
   const donor = await Donor.findById(this.donorId);
   if (this.isNew) {
+    // find bloodbankid using camp
+    this.bloodbankId = camp.bloodbank;
+    //send mail to donor
     if (donor.email && donor.emailVerified) {
       await sendMail(donor.email, subject, html);
     }
@@ -121,7 +158,7 @@ donationSchema.post("save", async function (doc, next) {
   if (doc.recipient && doc.recipient.recipientId) {
     const donor = await Donor.findById(doc.donorId);
     const subject = "Donation Update";
-    const html = `<p>Your donation has been used to save a life! Thank you for your contribution.</p>`;
+    const html = `<p>Your donation of ${doc.componentDetails.componentQuantity} units of ${doc.componentDetails.componentType} has been used to save a life! Thank you for your contribution.</p>`;
     if (donor.email && donor.emailVerified) {
       await sendMail(donor.email, subject, html);
     }
