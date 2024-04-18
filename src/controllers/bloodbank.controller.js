@@ -243,9 +243,10 @@ const getCamps = asyncHandler(async (req, res, next) => {
 const changeCampStatus = asyncHandler(async (req, res, next) => {
   const status = req.query.status;
   const campId = req.query.id;
+
   const camp = await DonationCamp.findById(campId);
   if (!camp) {
-    throw new ApiError(404, "Blood Bank not found");
+    throw new ApiError(404, "Camp not found");
   }
   camp.status = status;
   await camp.save();
@@ -255,7 +256,9 @@ const changeCampStatus = asyncHandler(async (req, res, next) => {
 // -------------Get blood bank---------------
 const getBloodBank = asyncHandler(async (req, res, next) => {
   const user = req.user;
-  res.status(200).json(new ApiResponse(200, user, "User profile fetched"));
+  res
+    .status(200)
+    .json(new ApiResponse(200, user, "Blood bank profile fetched"));
 });
 
 // -------------logout blood bank---------------

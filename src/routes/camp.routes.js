@@ -3,10 +3,10 @@ import {
   sendEmailVerifyOTP,
   verifyOTP,
   registerDonationCamp,
-  //   registerBloodBank,
-  //   loginBloodBank,
-  //   getBloodBank,
-  //   logoutBloodBank,
+  loginDonationCamp,
+  getDonationCamp,
+  logoutCamp,
+  getRegisteredBloodBanks,
 } from "../controllers/camp.controller.js";
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -18,10 +18,13 @@ const router = Router();
 router.route("/send-register-otp").post(rateLimit(50), sendEmailVerifyOTP);
 router.route("/verify-otp").post(rateLimit(50), verifyOTP);
 router.route("/register").post(rateLimit(50), registerDonationCamp);
-// router.route("/login").post(rateLimit(50), loginBloodBank);
+router.route("/login").post(rateLimit(50), loginDonationCamp);
 
-// // GET
-// router.route("/get-blood-bank").get(rateLimit(50), verifyJWT, getBloodBank); //auth
-// router.route("/logout").get(rateLimit(50), verifyJWT, logoutBloodBank); //auth
+// GET
+router.route("/get-camp").get(rateLimit(50), verifyJWT, getDonationCamp); //auth
+router.route("/logout").get(rateLimit(50), verifyJWT, logoutCamp); //auth
+router
+  .route("/get-blood-banks")
+  .get(rateLimit(50), verifyJWT, getRegisteredBloodBanks); //auth
 
 export default router;

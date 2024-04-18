@@ -6,6 +6,7 @@ import { BloodBank } from "../models/bloodBank.model.js";
 import { Otp } from "../models/otp.model.js";
 import { sendMail } from "../utils/mailService.js";
 import { DonationCamp } from "../models/donationCamp.model.js";
+import { Donation } from "../models/donation.model.js";
 
 const sendEmailVerifyOTP = asyncHandler(async (req, res, next) => {
   const { email } = req.body;
@@ -184,15 +185,18 @@ const registerDonationCamp = asyncHandler(async (req, res, next) => {
       )
     );
 });
-// -------------login blood bank---------------
-const loginBloodBank = asyncHandler(async (req, res, next) => {
+
+// -------------login camp---------------
+const loginDonationCamp = asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
 
   if (!password || !email) {
     throw new ApiError(400, "Please provide all the required fields");
   }
 
-  let existingUser = await BloodBank.findOne({ email }).select("+password");
+  let existingUser = await DonationCamp.findOne({
+    organizerEmail: email,
+  }).select("+password");
 
   if (!existingUser) {
     throw new ApiError(404, "User not found");
@@ -217,14 +221,15 @@ const loginBloodBank = asyncHandler(async (req, res, next) => {
     .cookie("refreshToken", refreshToken, cookieOptions)
     .json(new ApiResponse(200, existingUser, "User logged in successfully"));
 });
-// -------------Get blood bank---------------
-const getBloodBank = asyncHandler(async (req, res, next) => {
+
+// --------------get camp----------------
+const getDonationCamp = asyncHandler(async (req, res, next) => {
   const user = req.user;
-  res.status(200).json(new ApiResponse(200, user, "User profile fetched"));
+  res.status(200).json(new ApiResponse(200, user, "Camp profile fetched"));
 });
 
-// -------------logout blood bank---------------
-const logoutBloodBank = asyncHandler(async (req, res, next) => {
+// ---------------logout camp----------------
+const logoutCamp = asyncHandler(async (req, res, next) => {
   res
     .status(200)
     .clearCookie("accessToken")
@@ -232,10 +237,48 @@ const logoutBloodBank = asyncHandler(async (req, res, next) => {
     .json(new ApiResponse(200, {}, "User logged out successfully"));
 });
 
+//-----------------get blood banks----------------
+const getRegisteredBloodBanks = asyncHandler(async (req, res, next) => {
+  const { pincode, category, name } = req.body;
+
+  console.log(pincode);
+  let query = {
+    status: "Approved",
+  };
+
+  if (pincode) {
+    query["address.pincode"] = pincode;
+  }
+
+  if (category) {
+    query.category = category;
+  }
+
+  if (name) {
+    query.name = { $regex: new RegExp("^" + name, "i") };
+  }
+
+  const bloodBanks = await BloodBank.find(query);
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        bloodBanks,
+        "Filtered blood banks fetched successfully"
+      )
+    );
+});
+
 export {
   sendEmailVerifyOTP,
   verifyOTP,
   registerDonationCamp,
+  loginDonationCamp,
+  getDonationCamp,
+  logoutCamp,
+  getRegisteredBloodBanks,
   // registerBloodBank,
   // loginBloodBank,
   // getBloodBank,

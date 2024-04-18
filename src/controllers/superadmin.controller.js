@@ -45,6 +45,12 @@ const getBloodBanks = asyncHandler(async (req, res, next) => {
 const changeBloodBankStatus = asyncHandler(async (req, res, next) => {
   const status = req.query.status;
   const bloodBankId = req.query.id;
+
+  const { email } = req.user;
+  if (!email || email !== process.env.SUPER_ADMIN_EMAIL) {
+    throw new ApiError(401, "Unauthorized");
+  }
+
   const bloodBank = await BloodBank.findById(bloodBankId);
   if (!bloodBank) {
     throw new ApiError(404, "Blood Bank not found");
@@ -69,9 +75,19 @@ const logoutSuperAdmin = asyncHandler(async (req, res, next) => {
     .json(new ApiResponse(200, {}, "Super Admin logged out successfully"));
 });
 
+const getSuperAdmin = asyncHandler(async (req, res, next) => {
+  const { email } = req.user;
+  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
+  if (!email || email !== superAdminEmail) {
+    throw new ApiError(401, "Invalid access token");
+  }
+  res.status(200).json(new ApiResponse(200, { superAdmin: verifyJWT }));
+});
+
 export {
   loginSuperAdmin,
   getBloodBanks,
   changeBloodBankStatus,
   logoutSuperAdmin,
+  getSuperAdmin,
 };

@@ -57,12 +57,6 @@ const donationSchema = new Schema(
           quantity: {
             type: Number,
           },
-          remainingQuantity: {
-            type: Number,
-            default: function () {
-              return this.quantity;
-            },
-          },
         },
       ],
     },

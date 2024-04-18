@@ -4,6 +4,7 @@ import {
   getBloodBanks,
   changeBloodBankStatus,
   logoutSuperAdmin,
+  getSuperAdmin,
 } from "../controllers/superadmin.controller.js";
 
 import { rateLimit } from "../middlewares/ratelimiter.middleware.js";
@@ -15,6 +16,7 @@ const router = Router();
 router.route("/login").post(rateLimit(50), loginSuperAdmin);
 
 // GET
+router.route("/get-super-admin").get(rateLimit(50), verifyJWT, getSuperAdmin); //auth
 router.route("/get-blood-banks").get(rateLimit(50), verifyJWT, getBloodBanks); //auth
 router.route("/logout").get(rateLimit(50), logoutSuperAdmin);
 

@@ -4,6 +4,56 @@ import bcrypt from "bcrypt";
 import { addressSchema } from "./helperModels/address.model.js";
 import { sendMail } from "../utils/mailService.js";
 
+const acceptedComponentTypeOptions = [
+  "Cryo Poor Plasma",
+  "Cryoprecipitate",
+  "Fresh Frozen Plasma",
+  "Irradiated RBC",
+  "Leukoreduced RBC",
+  "Packed Red Blood Cells",
+  "Plasma",
+  "Platelet Concentrate",
+  "Platelet Rich Plasma",
+  "Platelets additive solutions",
+  "Random Donor Platelets",
+  "Sagm Packed RBC",
+  "Single Donor Plasma",
+  "Single Donor Platelet",
+  "Whole Blood",
+];
+
+const acceptedDonationTypeOptions = [
+  "Whole Blood",
+  "Plateletpheresis",
+  "Plasmapheresis",
+  "Double Red Cell",
+  "Single Donor Platelet",
+  "Single Donor Plasma",
+  "Cord Blood",
+  "Apheresis",
+];
+
+const bagTypeOptions = [
+  "Single (350/450ml)",
+  "Double (350/450ml)",
+  "Triple (350/450ml)",
+  "Quadruple (450ml) with inline filter",
+  "Quadruple (450ml) without inline filter",
+  "Penta Bag (450ml)",
+  "Transfer Bag",
+  "Aphearesis Bag",
+  "Triple (350ml) CPD/SAGM",
+  "Triple (450ml) CPD/SAGM",
+];
+
+const acceptedDonorTypeOptions = [
+  "Voluntary",
+  "Replacement",
+  "Directed",
+  "Autologous",
+  "Professional Donor",
+];
+
 const bloodBankSchema = new Schema(
   {
     name: {
@@ -109,16 +159,10 @@ const bloodBankSchema = new Schema(
         type: [
           {
             type: String,
-            enum: [
-              "Voluntary",
-              "Replacement",
-              "Directed",
-              "Autologous",
-              "Professional Donor",
-            ],
+            enum: acceptedDonorTypeOptions,
           },
         ],
-        default: [],
+        default: acceptedDonorTypeOptions,
       },
     },
     acceptedDonationType: {
@@ -126,19 +170,10 @@ const bloodBankSchema = new Schema(
         type: [
           {
             type: String,
-            enum: [
-              "Whole Blood",
-              "Plateletpheresis",
-              "Plasmapheresis",
-              "Double Red Cell",
-              "Single Donor Platelet",
-              "Single Donor Plasma",
-              "Cord Blood",
-              "Apheresis",
-            ],
+            enum: acceptedDonationTypeOptions,
           },
         ],
-        default: [],
+        default: acceptedDonationTypeOptions,
       },
     },
     acceptedComponentType: {
@@ -146,26 +181,10 @@ const bloodBankSchema = new Schema(
         type: [
           {
             type: String,
-            enum: [
-              "Cryo Poor Plasma",
-              "Cryoprecipitate",
-              "Fresh Frozen Plasma",
-              "Irradiated RBC",
-              "Leukoreduced RBC",
-              "Packed Red Blood Cells",
-              "Plasma",
-              "Platelet Concentrate",
-              "Platelet Rich Plasma",
-              "Platelets additive solutions",
-              "Random Donor Platelets",
-              "Sagm Packed RBC",
-              "Single Donor Plasma",
-              "Single Donor Platelet",
-              "Whole Blood",
-            ],
+            enum: acceptedComponentTypeOptions,
           },
         ],
-        default: [],
+        default: acceptedComponentTypeOptions,
       },
     },
     bagType: {
@@ -173,21 +192,10 @@ const bloodBankSchema = new Schema(
         type: [
           {
             type: String,
-            enum: [
-              "Single (350/450ml)",
-              "Double (350/450ml)",
-              "Triple (350/450ml)",
-              "Quadruple (450ml) with inline filter",
-              "Quadruple (450ml) without inline filter",
-              "Penta Bag (450ml)",
-              "Transfer Bag",
-              "Aphearesis Bag",
-              "Triple (350ml) CPD/SAGM",
-              "Triple (450ml) CPD/SAGM",
-            ],
+            enum: bagTypeOptions,
           },
         ],
-        default: [],
+        default: bagTypeOptions,
       },
     },
     ttiType: {

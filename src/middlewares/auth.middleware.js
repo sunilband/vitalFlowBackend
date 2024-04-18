@@ -38,6 +38,7 @@ const verifyJWT = asyncHandler(async (req, res, next) => {
       if (email !== process.env.SUPER_ADMIN_EMAIL) {
         throw new ApiError(401, "Middleware: Invalid token");
       }
+      user = { email };
     }
 
     if (role === "bloodBank") {
