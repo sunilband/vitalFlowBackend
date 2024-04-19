@@ -77,11 +77,13 @@ const logoutSuperAdmin = asyncHandler(async (req, res, next) => {
 
 const getSuperAdmin = asyncHandler(async (req, res, next) => {
   const { email } = req.user;
+  console.log(email);
   const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
   if (!email || email !== superAdminEmail) {
     throw new ApiError(401, "Invalid access token");
   }
-  res.status(200).json(new ApiResponse(200, { superAdmin: verifyJWT }));
+  console.log("yaha tak aya");
+  res.status(200).json(new ApiResponse(200, { email, role: "superAdmin" }));
 });
 
 export {

@@ -239,9 +239,8 @@ const logoutCamp = asyncHandler(async (req, res, next) => {
 
 //-----------------get blood banks----------------
 const getRegisteredBloodBanks = asyncHandler(async (req, res, next) => {
-  const { pincode, category, name } = req.body;
+  const { pincode, category, name, status, mode } = req.body;
 
-  console.log(pincode);
   let query = {
     status: "Approved",
   };
@@ -256,6 +255,14 @@ const getRegisteredBloodBanks = asyncHandler(async (req, res, next) => {
 
   if (name) {
     query.name = { $regex: new RegExp("^" + name, "i") };
+  }
+
+  if (status !== (undefined || null || "") && mode == "admin") {
+    query["status"] = status;
+  }
+
+  if (status == "" && mode == "admin") {
+    delete query.status;
   }
 
   const bloodBanks = await BloodBank.find(query);

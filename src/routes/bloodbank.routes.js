@@ -24,10 +24,10 @@ router.route("/send-register-otp").post(rateLimit(50), sendEmailVerifyOTP);
 router.route("/verify-otp").post(rateLimit(50), verifyOTP);
 router.route("/register").post(rateLimit(50), registerBloodBank);
 router.route("/login").post(rateLimit(50), loginBloodBank);
+router.route("/get-camps").post(rateLimit(50), verifyJWT, getCamps); //auth
 
 // GET
 router.route("/get-blood-bank").get(rateLimit(50), verifyJWT, getBloodBank); //auth
-router.route("/get-camps").get(rateLimit(50), verifyJWT, getCamps); //auth
 router.route("/logout").get(rateLimit(50), verifyJWT, logoutBloodBank); //auth
 router
   .route("/get-available-quantity")

@@ -222,17 +222,39 @@ const loginBloodBank = asyncHandler(async (req, res, next) => {
 
 // -------------Get all camps---------------
 const getCamps = asyncHandler(async (req, res, next) => {
-  const query = {};
+  const { pincode, organizationType, name, status, date } = req.body;
 
-  if (req.query.status) query.status = req.query.status;
-  if (req.query.organizationType)
-    query.organizationType = req.query.organizationType;
-  if (req.query.date) query.category = req.query.date;
+  let query = {};
 
-  if (req.query.address) {
-    query["address.state"] = req.query.address.state;
-    query["address.city"] = req.query.address.city;
+  if (pincode) {
+    query["address.pincode"] = pincode;
   }
+
+  if (organizationType) {
+    query.organizationType = organizationType;
+  }
+
+  if (name) {
+    query.name = { $regex: new RegExp("^" + name, "i") };
+  }
+
+  if (status) {
+    query.status = status;
+  }
+
+  if (date) {
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999);
+
+    query.campDate = {
+      $gte: startDate,
+      $lte: endDate,
+    };
+  }
+
   const bloodBankId = req.user._id.toHexString();
   query.bloodbank = bloodBankId;
   const camps = await DonationCamp.find(query);

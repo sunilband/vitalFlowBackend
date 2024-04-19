@@ -19,12 +19,10 @@ router.route("/send-register-otp").post(rateLimit(50), sendEmailVerifyOTP);
 router.route("/verify-otp").post(rateLimit(50), verifyOTP);
 router.route("/register").post(rateLimit(50), registerDonationCamp);
 router.route("/login").post(rateLimit(50), loginDonationCamp);
+router.route("/get-blood-banks").post(rateLimit(50), getRegisteredBloodBanks); //this will be used for registration of camp
 
 // GET
 router.route("/get-camp").get(rateLimit(50), verifyJWT, getDonationCamp); //auth
 router.route("/logout").get(rateLimit(50), verifyJWT, logoutCamp); //auth
-router
-  .route("/get-blood-banks")
-  .get(rateLimit(50), verifyJWT, getRegisteredBloodBanks); //auth
 
 export default router;
