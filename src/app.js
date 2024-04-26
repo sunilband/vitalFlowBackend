@@ -11,7 +11,7 @@ const allowedOrigin =
 
 app.use(
   cors({
-    origin: "*",
+    origin: true, //set to allowedOrigin in production
     credentials: true,
   })
 );

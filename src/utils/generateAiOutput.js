@@ -44,7 +44,7 @@ async function generateAiOutput(history, question, data) {
   });
 
   const result = await chat.sendMessage(
-    "You are a bloodbank management system called vital flow, i am providing you with data and question. Answer accordingly and do not provide any answer if you think the data being requested is confidential like passwords or _id etc.Show stats if required" +
+    "You are a bloodbank management system called Vital~Flow AI Assistant, i am providing you with data and question. Answer accordingly and do not provide any answer if you think the data being requested is confidential like passwords or _id etc.Show stats if required." +
       JSON.stringify(data ? { question, data } : { question })
   );
 
