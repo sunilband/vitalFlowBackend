@@ -50,4 +50,8 @@ app.use("/api/v1/bloodbank/", bloodBankRouter);
 import campRouter from "./routes/camp.routes.js";
 app.use("/api/v1/camp/", campRouter);
 
+// CHAT
+import chatRouter from "./routes/chat.routes.js";
+app.use("/api/v1/chat/", chatRouter);
+
 export { app };

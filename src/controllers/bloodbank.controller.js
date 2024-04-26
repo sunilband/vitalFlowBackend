@@ -336,11 +336,17 @@ const assignRecipient = asyncHandler(async (req, res, next) => {
       );
     if (!extractedComponentsFromWholeBlood) {
       throw new Error(
-        "Component not extracted from whole blood for this donation"
+        `Component not extracted from whole blood for this donation. The extracted components are ${donation.extractedComponentsFromWholeBlood.map(
+          (x) => {
+            return x.component;
+          }
+        )}`
       );
     }
     if (extractedComponentsFromWholeBlood.quantity < componentQuantityGiven) {
-      throw new Error(`The given quantity is more than the extracted quantity`);
+      throw new Error(
+        `The given quantity is more than the extracted quantity.The extracted quantity for ${componentGiven} is ${extractedComponentsFromWholeBlood.quantity} ml.`
+      );
     }
 
     // there can be previous recipients, so we need to check the remaining quantity as the recipients field is an array.first find what previous recipients have taken the component and then subtract the quantity from the extracted quantity
@@ -367,7 +373,7 @@ const assignRecipient = asyncHandler(async (req, res, next) => {
     componentGiven !== donation.componentDetails.componentType
   ) {
     throw new Error(
-      "The given component type does not match the donated component type"
+      `The given component is not same as the donated component. The donated component is ${donation.componentDetails.componentType} and the given component is ${componentGiven}`
     );
   }
   // if donation is not of whole blood type, then componentQuantityGiven should be less than or equal to donated component quantity
@@ -409,12 +415,15 @@ const assignRecipient = asyncHandler(async (req, res, next) => {
       phone,
       email,
       componentGiven,
+      componentQuantityGiven,
     });
   }
 
   await donation.save();
 
-  res.status(200).json(new ApiResponse(200, { donation }));
+  res
+    .status(200)
+    .json(new ApiResponse(200, { donation }, "Recipient assigned"));
 });
 
 // -------------Extract components from whole blood---------------
@@ -460,6 +469,7 @@ const filterDonations = asyncHandler(async (req, res, next) => {
     bloodGroup,
     componentType,
     donationTime,
+    extractedComponent,
   } = req.body;
   const { _id } = req.user;
 
@@ -483,7 +493,20 @@ const filterDonations = asyncHandler(async (req, res, next) => {
   }
 
   if (donationTime) {
-    query.donationTime = { $gte: new Date(donationTime) };
+    const startDate = new Date(donationTime);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(donationTime);
+    endDate.setHours(23, 59, 59, 999);
+
+    query.donationTime = {
+      $gte: startDate,
+      $lte: endDate,
+    };
+  }
+
+  if (extractedComponent) {
+    query["extractedComponentsFromWholeBlood.component"] = extractedComponent;
   }
 
   let donations = await Donation.find(query).populate("donorId");
@@ -501,6 +524,29 @@ const filterDonations = asyncHandler(async (req, res, next) => {
   }
 
   res.status(200).json(new ApiResponse(200, { donations }));
+});
+
+// ---------------get all registered donors------------
+const filterDonors = asyncHandler(async (req, res, next) => {
+  const { fullName, email, phone } = req.body;
+
+  let query = {};
+
+  if (fullName) {
+    query.fullName = { $regex: new RegExp(fullName, "i") };
+  }
+
+  if (email) {
+    query.email = email;
+  }
+
+  if (phone) {
+    query.phone = phone;
+  }
+
+  const donors = await Donor.find(query);
+
+  res.status(200).json(new ApiResponse(200, { donors }));
 });
 
 // ---------------TODO:THIS IS INCOMPLETE (NEEDS TO BE COMPLETED) the remaining quantity needs to be minus from donated----------------
@@ -610,4 +656,5 @@ export {
   getOwnAvailableComponentQuantity,
   extractComponentsFromWholeBlood,
   filterDonations,
+  filterDonors,
 };

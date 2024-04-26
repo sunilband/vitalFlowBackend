@@ -49,7 +49,8 @@ const donorSchema = new Schema(
       lowercase: true,
       validate: {
         validator: function (v) {
-          return /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/.test(v);
+          // return /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/.test(v);
+          return /^([\w.]+@([\w]+\.)+[\w]{2,4})?$/.test(v);
         },
         message: (props) => `${props.value} is not a valid email`,
       },
@@ -83,7 +84,7 @@ const donorSchema = new Schema(
 
     whatsapp: {
       type: String,
-      unique: true,
+      // unique: true,
       countryCode: {
         type: String,
         default: "+91",

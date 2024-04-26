@@ -7,6 +7,7 @@ import { Otp } from "../models/otp.model.js";
 import { sendMail } from "../utils/mailService.js";
 import { DonationCamp } from "../models/donationCamp.model.js";
 import { Donation } from "../models/donation.model.js";
+import { Donor } from "../models/donor.model.js";
 
 const sendEmailVerifyOTP = asyncHandler(async (req, res, next) => {
   const { email } = req.body;
@@ -278,6 +279,90 @@ const getRegisteredBloodBanks = asyncHandler(async (req, res, next) => {
     );
 });
 
+const getRegisteredDonors = asyncHandler(async (req, res, next) => {
+  const { fullName, email, phone } = req.body;
+
+  let query = {};
+
+  if (fullName) {
+    query.fullName = { $regex: new RegExp("^" + fullName, "i") };
+  }
+
+  if (email) {
+    query.email = email;
+  }
+
+  if (phone) {
+    query.phone = phone;
+  }
+
+  const donors = await Donor.find(query);
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, donors, "Filtered donors fetched successfully"));
+});
+
+const createDonation = asyncHandler(async (req, res) => {
+  const {
+    componentType,
+    componentQuantity,
+    bloodGroup,
+    donationTime,
+    donorId,
+  } = req.body;
+  if (!componentType || !componentQuantity || !bloodGroup || !donorId) {
+    throw new ApiError(400, "Please provide all the required fields");
+  }
+
+  const camp = req.user;
+
+  console.log(camp);
+
+  const donor = await Donor.findById(donorId);
+
+  if (!donor) {
+    throw new ApiError(404, "Donor not found");
+  }
+
+  if (donor.bloodGroup !== bloodGroup) {
+    throw new ApiError(
+      400,
+      `Donor blood group (${donor.bloodGroup}) does not match with the blood group (${bloodGroup}) provided`
+    );
+  }
+
+  const donation = await Donation.create({
+    donorId,
+    type: "Donate",
+    componentDetails: {
+      componentType,
+      componentQuantity,
+      bloodGroup,
+    },
+    donationTime: donationTime || new Date(),
+    campId: camp._id,
+  });
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, donation, "Donation entry successful"));
+});
+
+const getDonations = asyncHandler(async (req, res) => {
+  // add more filters later
+  const camp = req.user;
+  const query = { campId: req.user._id };
+
+  const donations = await Donation.find({ campId: camp._id }).populate(
+    "donorId"
+  );
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, donations, "Donations fetched successfully"));
+});
+
 export {
   sendEmailVerifyOTP,
   verifyOTP,
@@ -286,8 +371,7 @@ export {
   getDonationCamp,
   logoutCamp,
   getRegisteredBloodBanks,
-  // registerBloodBank,
-  // loginBloodBank,
-  // getBloodBank,
-  // logoutBloodBank,
+  getRegisteredDonors,
+  createDonation,
+  getDonations,
 };

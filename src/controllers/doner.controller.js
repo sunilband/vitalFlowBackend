@@ -144,7 +144,7 @@ const registerDoner = asyncHandler(async (req, res) => {
   if (!verifiedPhone && !verifiedEmail) {
     throw new ApiError(400, `Phone or Email not verified`);
   }
-
+  console.log("yaha aya");
   const newUser = await Donor.create({
     fullName,
     dob,
