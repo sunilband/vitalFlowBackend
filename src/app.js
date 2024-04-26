@@ -6,7 +6,10 @@ const app = express();
 // CORS settings
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN,
+    origin:
+      process.env.NODE_ENV == "developement"
+        ? process.env.CORS_ORIGIN_DEV
+        : process.env.CORS_ORIGIN_PROD,
     credentials: true,
   })
 );
