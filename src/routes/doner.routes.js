@@ -9,7 +9,8 @@ import {
   logoutUser,
   refreshAccessToken,
   getCurrentUser,
-  createDonation,
+  getAllSelfDonations,
+  verifyCertificate,
 } from "../controllers/doner.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { rateLimit } from "../middlewares/ratelimiter.middleware.js";
@@ -23,19 +24,14 @@ router.route("/verify-otp").post(rateLimit(50), verifyOTP);
 router.route("/register-doner").post(rateLimit(50), registerDoner);
 router.route("/send-login-otp").post(rateLimit(50), loginOTP);
 router.route("/login-donor").post(rateLimit(50), loginDonor);
-router.route("/create-donation").post(rateLimit(50), verifyJWT, createDonation); //auth
+router.route("/verify-certificate").post(rateLimit(50), verifyCertificate);
 
 // GET
 router.route("/get-donor").get(rateLimit(50), verifyJWT, getCurrentUser); //auth
 router.route("/logout").get(rateLimit(50), verifyJWT, logoutUser); //auth
 router.route("/refresh-token").get(rateLimit(50), refreshAccessToken);
-
-// router
-//   .route("/change-password")
-//   .put(rateLimit(1), verifyJWT, changeUserpassword);
-
-// router
-//   .route("/update-account")
-//   .put(rateLimit(1), verifyJWT, updateAccountDetails);
+router
+  .route("/get-all-self-donations")
+  .get(rateLimit(50), verifyJWT, getAllSelfDonations); //auth
 
 export default router;

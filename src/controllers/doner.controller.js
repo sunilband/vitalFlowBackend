@@ -127,10 +127,20 @@ const registerDoner = asyncHandler(async (req, res) => {
   ) {
     throw new ApiError(400, "Please provide all the required fields");
   }
+  console.log("address", req.body);
+  let query = {};
 
-  const existingUser = await Donor.findOne({
-    $or: [{ email }, { phone }],
-  });
+  if (email) {
+    query.email = email;
+  }
+
+  if (phone) {
+    query.phone = phone;
+  }
+
+  const existingUser = await Donor.findOne(query);
+
+  console.log("existing", existingUser);
 
   if (existingUser) {
     throw new ApiError(409, "Email or Username already exists");
@@ -144,7 +154,6 @@ const registerDoner = asyncHandler(async (req, res) => {
   if (!verifiedPhone && !verifiedEmail) {
     throw new ApiError(400, `Phone or Email not verified`);
   }
-  console.log("yaha aya");
   const newUser = await Donor.create({
     fullName,
     dob,
@@ -329,38 +338,44 @@ const getCurrentUser = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, user, "User profile fetched"));
 });
 
-// ---------------donation related functions----------------
-const createDonation = asyncHandler(async (req, res) => {
-  const { componentType, componentQuantity, bloodGroup, campId, donationTime } =
-    req.body;
-  if (!componentType || !componentQuantity || !bloodGroup || !campId) {
-    throw new ApiError(400, "Please provide all the required fields");
-  }
-
-  const user = req.user;
-
-  if (user.bloodGroup !== bloodGroup) {
-    throw new ApiError(400, "Blood group mismatch");
-  }
-
-  const donation = await Donation.create({
-    donorId: user._id,
-    type: "Donate",
-    componentDetails: {
-      componentType,
-      componentQuantity,
-      bloodGroup,
-    },
-    donationTime: donationTime || new Date(),
-    campId,
-  });
-
+const getAllSelfDonations = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const donations = await Donation.find({ donorId: _id })
+    .populate("campId", "organizationName campName address")
+    .populate("bloodbankId", "name")
+    .select({
+      "recipients.registered": 0,
+      "recipients.fullName": 0,
+      "recipients.email": 0,
+      "recipients.phone": 0,
+      "recipients._id": 0,
+    });
   res
     .status(200)
-    .json(new ApiResponse(200, donation, "Donation entry successful"));
+    .json(new ApiResponse(200, donations, "Donations fetched successfully"));
 });
 
-const requestDonation = asyncHandler(async (req, res) => {});
+const verifyCertificate = asyncHandler(async (req, res) => {
+  const { id } = req.body;
+  const donation = await Donation.find({ _id: id })
+    .populate("campId", "organizationName campName address")
+    .populate("donorId", "fullName")
+    .populate("bloodbankId", "name")
+    .select({
+      "recipients.registered": 0,
+      "recipients.fullName": 0,
+      "recipients.email": 0,
+      "recipients.phone": 0,
+      "recipients._id": 0,
+    });
+
+  if (!donation[0]) {
+    throw new ApiError(404, "Donation not found");
+  }
+  res
+    .status(200)
+    .json(new ApiResponse(200, donation, "Donation fetched successfully"));
+});
 
 export {
   sendPhoneOTP,
@@ -372,5 +387,6 @@ export {
   logoutUser,
   refreshAccessToken,
   getCurrentUser,
-  createDonation,
+  getAllSelfDonations,
+  verifyCertificate,
 };

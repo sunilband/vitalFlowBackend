@@ -10,7 +10,7 @@ const superAdminSchema = new Schema({
   },
   email: {
     type: String,
-    unique: true,
+    // unique: true, //idk this is causing issues
     required: true,
     trim: true,
     lowercase: true,
@@ -40,7 +40,7 @@ const superAdminSchema = new Schema({
     trim: true,
     countryCode: {
       type: String,
-      default: "+91",
+      // default: "+91",
     },
     validate: {
       validator: function (v) {

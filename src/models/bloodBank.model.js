@@ -82,7 +82,7 @@ const bloodBankSchema = new Schema(
       trim: true,
       countryCode: {
         type: String,
-        default: "+91",
+        // default: "+91",
       },
     },
     email: {
@@ -130,12 +130,6 @@ const bloodBankSchema = new Schema(
     website: {
       type: String,
       trim: true,
-      validate: {
-        validator: function (v) {
-          return /^(http|https):\/\/[^ "]+$/.test(v);
-        },
-        message: (props) => `${props.value} is not a valid website`,
-      },
     },
     componentFacility: {
       type: Boolean,

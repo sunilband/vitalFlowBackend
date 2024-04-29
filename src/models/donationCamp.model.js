@@ -34,7 +34,7 @@ const donationCampSchema = new Schema(
       trim: true,
       countryCode: {
         type: String,
-        default: "+91",
+        // default: "+91",
       },
       validate: {
         validator: function (v) {
@@ -65,7 +65,7 @@ const donationCampSchema = new Schema(
       trim: true,
       countryCode: {
         type: String,
-        default: "+91",
+        // default: "+91",
       },
       validate: {
         validator: function (v) {

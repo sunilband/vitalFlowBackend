@@ -317,8 +317,6 @@ const createDonation = asyncHandler(async (req, res) => {
 
   const camp = req.user;
 
-  console.log(camp);
-
   const donor = await Donor.findById(donorId);
 
   if (!donor) {

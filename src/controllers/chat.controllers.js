@@ -99,6 +99,92 @@ const bloodBankChat = asyncHandler(async (req, res, next) => {
   );
 });
 
+const campChat = asyncHandler(async (req, res, next) => {
+  const { _id } = req.user;
+  const { question } = req.body;
+
+  // Cache the data use nodecacher
+  const cacheKey = `${_id}`;
+  const cachedData = await cache.get(cacheKey);
+
+  let result = !cachedData
+    ? await DonationCamp.aggregate([
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(_id),
+          },
+        },
+        {
+          $lookup: {
+            from: "donations",
+            let: { campId: "$_id" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ["$campId", "$$campId"],
+                  },
+                },
+              },
+            ],
+            as: "donations",
+          },
+        },
+        {
+          $lookup: {
+            from: "donors",
+            localField: "donations.donorId",
+            foreignField: "_id",
+            as: "donors",
+          },
+        },
+        {
+          $lookup: {
+            from: "bloodbanks",
+            localField: "bloodbank",
+            foreignField: "_id",
+            as: "bloodbank",
+          },
+        },
+      ])
+    : [cachedData];
+
+  if (!cachedData) {
+    cache.set(cacheKey, result);
+  }
+
+  const [campDetails] = result;
+
+  let history = await Chat.find({ senderId: _id, considerContext: true });
+  history = history.map((chat) => ({
+    role: chat.role,
+    parts: [{ text: chat.message }],
+  }));
+
+  const AiOutput = await generateAiOutput(history, question, {
+    campDetails,
+  });
+
+  await Chat.insertMany([
+    {
+      senderId: _id,
+      role: "user",
+      message: question,
+    },
+    {
+      senderId: _id,
+      role: "model",
+      message: AiOutput,
+    },
+  ]);
+
+  res.status(200).json(
+    new ApiResponse(200, {
+      AiOutput,
+    })
+  );
+});
+
 const removeChatContext = asyncHandler(async (req, res, next) => {
   const { _id } = req.user;
   await Chat.updateMany({ senderId: _id }, { considerContext: false });
@@ -113,4 +199,4 @@ const getChatHistory = asyncHandler(async (req, res, next) => {
   res.status(200).json(new ApiResponse(200, history, "Chat History fetched"));
 });
 
-export { bloodBankChat, removeChatContext, getChatHistory };
+export { bloodBankChat, campChat, removeChatContext, getChatHistory };

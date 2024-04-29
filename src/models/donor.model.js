@@ -44,7 +44,7 @@ const donorSchema = new Schema(
     },
     email: {
       type: String,
-      unique: true,
+      // unique: true,
       trim: true,
       lowercase: true,
       validate: {
@@ -64,9 +64,9 @@ const donorSchema = new Schema(
       type: String,
       countryCode: {
         type: String,
-        default: "+91",
+        // default: "+91",
       },
-      unique: true,
+      // unique: true,
       validate: {
         validator: function (v) {
           return /^[0-9]{10}$/.test(v);
@@ -87,7 +87,7 @@ const donorSchema = new Schema(
       // unique: true,
       countryCode: {
         type: String,
-        default: "+91",
+        // default: "+91",
       },
       validate: {
         validator: function (v) {
