@@ -185,6 +185,64 @@ const campChat = asyncHandler(async (req, res, next) => {
   );
 });
 
+const donorChat = asyncHandler(async (req, res, next) => {
+  const { _id } = req.user;
+  const { question } = req.body;
+
+  // Cache the data use nodecacher
+  const cacheKey = `${_id}`;
+  const cachedData = await cache.get(cacheKey);
+
+  let result = !cachedData
+    ? await Donation.find({ donorId: _id })
+        .populate("campId", "organizationName campName address")
+        .populate("bloodbankId", "name")
+        .populate("donorId")
+        .select({
+          "recipients.registered": 0,
+          "recipients.fullName": 0,
+          "recipients.email": 0,
+          "recipients.phone": 0,
+          "recipients._id": 0,
+        })
+    : [cachedData];
+
+  if (!cachedData) {
+    cache.set(cacheKey, result);
+  }
+
+  const [donorDetails] = result;
+
+  let history = await Chat.find({ senderId: _id, considerContext: true });
+  history = history.map((chat) => ({
+    role: chat.role,
+    parts: [{ text: chat.message }],
+  }));
+
+  const AiOutput = await generateAiOutput(history, question, {
+    donorDetails,
+  });
+
+  await Chat.insertMany([
+    {
+      senderId: _id,
+      role: "user",
+      message: question,
+    },
+    {
+      senderId: _id,
+      role: "model",
+      message: AiOutput,
+    },
+  ]);
+
+  res.status(200).json(
+    new ApiResponse(200, {
+      AiOutput,
+    })
+  );
+});
+
 const removeChatContext = asyncHandler(async (req, res, next) => {
   const { _id } = req.user;
   await Chat.updateMany({ senderId: _id }, { considerContext: false });
@@ -199,4 +257,10 @@ const getChatHistory = asyncHandler(async (req, res, next) => {
   res.status(200).json(new ApiResponse(200, history, "Chat History fetched"));
 });
 
-export { bloodBankChat, campChat, removeChatContext, getChatHistory };
+export {
+  bloodBankChat,
+  campChat,
+  donorChat,
+  removeChatContext,
+  getChatHistory,
+};

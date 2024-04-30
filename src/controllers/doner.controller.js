@@ -343,6 +343,7 @@ const getAllSelfDonations = asyncHandler(async (req, res) => {
   const donations = await Donation.find({ donorId: _id })
     .populate("campId", "organizationName campName address")
     .populate("bloodbankId", "name")
+    .populate("donorId")
     .select({
       "recipients.registered": 0,
       "recipients.fullName": 0,

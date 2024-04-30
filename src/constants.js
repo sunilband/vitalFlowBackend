@@ -5,7 +5,7 @@ const cookieOptions = {
   path: "/",
   httpOnly: true,
   secure: process.env.NODE_ENV === "development" ? false : true,
-  // sameSite: 'None',
+  sameSite: "None",
 };
 
 // rate limiting

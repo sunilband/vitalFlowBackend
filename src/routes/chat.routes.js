@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   bloodBankChat,
   campChat,
+  donorChat,
   removeChatContext,
   getChatHistory,
 } from "../controllers/chat.controllers.js";
@@ -13,6 +14,7 @@ const router = Router();
 // POST
 router.route("/blood-bank-chat").post(rateLimit(50), verifyJWT, bloodBankChat); //auth
 router.route("/camp-chat").post(rateLimit(50), verifyJWT, campChat); //auth
+router.route("/donor-chat").post(rateLimit(50), verifyJWT, donorChat); //auth
 
 // GET
 router.route("/get-chat-history").get(rateLimit(50), verifyJWT, getChatHistory); //auth
