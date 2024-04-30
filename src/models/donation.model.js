@@ -135,7 +135,7 @@ donationSchema.pre("save", async function (next) {
 
   //donation creation mail
   const subject = "Donation Acknowledgement";
-  const html = `<p>Thank you for donating using Vital~Flow! Whenever the donation is used to save lives you will be notified!</p>`;
+  const html = `<p>Thank you for donating using Vital~Flow! Whenever the donation is used to save lives you will be notified! You can download your certificate from <a href="https://vitalflow.vercel.app/donor/">Here</a>.</p>`;
   const donor = await Donor.findById(this.donorId);
   if (this.isNew) {
     // find bloodbankid using camp
@@ -145,12 +145,15 @@ donationSchema.pre("save", async function (next) {
       await sendMail(donor.email, subject, html);
     }
   }
+  // Store the initial length of the recipients array
+  this._recipientsCount = this.recipients.length;
   next();
 });
 
 //sending mail to donor when donation is used
 donationSchema.post("save", async function (doc, next) {
-  if (doc.recipient && doc.recipient.recipientId) {
+  // If the length of the recipients array has increased, a new recipient has been added
+  if (doc.recipients.length > doc._recipientsCount) {
     const donor = await Donor.findById(doc.donorId);
     const subject = "Donation Update";
     const html = `<p>Your donation of ${doc.componentDetails.componentQuantity} units of ${doc.componentDetails.componentType} has been used to save a life! Thank you for your contribution.</p>`;
@@ -158,6 +161,7 @@ donationSchema.post("save", async function (doc, next) {
       await sendMail(donor.email, subject, html);
     }
   }
+
   next();
 });
 
