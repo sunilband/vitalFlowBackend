@@ -1,8 +1,9 @@
 import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import { addressSchema } from "./helperModels/address.model.js";
 
-const userSchema = new Schema(
+const donorSchema = new Schema(
   {
     fullName: {
       type: String,
@@ -29,34 +30,43 @@ const userSchema = new Schema(
       trim: true,
     },
 
-    bloogGroup: {
+    gender: {
+      type: String,
+      required: true,
+      enum: ["Male", "Female", "Other"],
+    },
+
+    bloodGroup: {
       type: String,
       required: true,
       enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
       trim: true,
     },
-
     email: {
       type: String,
-      unique: true,
+      // unique: true,
       trim: true,
       lowercase: true,
       validate: {
         validator: function (v) {
-          return /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/.test(v);
+          // return /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/.test(v);
+          return /^([\w.]+@([\w]+\.)+[\w]{2,4})?$/.test(v);
         },
         message: (props) => `${props.value} is not a valid email`,
       },
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
     },
 
     phone: {
       type: String,
       countryCode: {
         type: String,
-        default: "+91",
+        // default: "+91",
       },
-      unique: true,
-      required: true,
+      // unique: true,
       validate: {
         validator: function (v) {
           return /^[0-9]{10}$/.test(v);
@@ -67,12 +77,17 @@ const userSchema = new Schema(
       index: true,
     },
 
+    phoneVerified: {
+      type: Boolean,
+      default: false,
+    },
+
     whatsapp: {
       type: String,
-      unique: true,
+      // unique: true,
       countryCode: {
         type: String,
-        default: "+91",
+        // default: "+91",
       },
       validate: {
         validator: function (v) {
@@ -84,10 +99,9 @@ const userSchema = new Schema(
       index: true,
     },
 
-    state: {
-      type: String,
+    address: {
+      type: addressSchema,
       required: true,
-      trim: true,
     },
 
     donationHistory: [
@@ -96,21 +110,23 @@ const userSchema = new Schema(
         ref: "Donation",
       },
     ],
-
-    donationRequestsHistory: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "DonationRequest",
-      },
-    ],
   },
   {
     timestamps: true,
   }
 );
 
+// atlast one (email or phone) is required
+donorSchema.pre("validate", function (next) {
+  if (!this.phone && !this.email) {
+    next(new Error("At least one of phone or email must be provided"));
+  } else {
+    next();
+  }
+});
+
 // pre save hook to calculate age from dob
-userSchema.pre("save", function (next) {
+donorSchema.pre("save", function (next) {
   const dob = this.dob;
   const ageDate = new Date(Date.now() - dob.getTime()); // miliseconds from epoch
   const age = Math.abs(ageDate.getUTCFullYear() - 1970);
@@ -119,26 +135,30 @@ userSchema.pre("save", function (next) {
 });
 
 // we are not using arrow function here because we need access to "this"
-userSchema.pre("save", async function (next) {
+donorSchema.pre("save", async function (next) {
   if (this.isModified("password")) {
     this.password = await bcrypt.hash(this.password, 10);
   }
   next();
 });
 
-// custom method to generate authToken
-userSchema.methods.ispasswordCorrect = async function (password) {
+// check password
+donorSchema.methods.ispasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
 // custom method to generate authToken
-userSchema.methods.generateAuthToken = async function () {
+donorSchema.methods.generateAuthToken = async function () {
   const token = await jwt.sign(
     {
       _id: this._id,
-      username: this.username,
-      fullName: this.fullName,
+      dob: this.dob,
       email: this.email,
+      phone: this.phone,
+      bloodGroup: this.bloodGroup,
+      gender: this.gender,
+      fullName: this.fullName,
+      whatsapp: this.whatsapp,
     },
     process.env.ACCESS_TOKEN_SECRET,
     { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
@@ -147,7 +167,7 @@ userSchema.methods.generateAuthToken = async function () {
 };
 
 // custom method to generate refreshToken
-userSchema.methods.generateRefreshToken = async function () {
+donorSchema.methods.generateRefreshToken = async function () {
   const token = await jwt.sign(
     {
       _id: this._id,
@@ -158,4 +178,4 @@ userSchema.methods.generateRefreshToken = async function () {
   return token;
 };
 
-export const User = mongoose.model("User", userSchema);
+export const Donor = mongoose.model("Donor", donorSchema);
