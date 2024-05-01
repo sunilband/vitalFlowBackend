@@ -59,4 +59,9 @@ app.use("/api/v1/camp/", campRouter);
 import chatRouter from "./routes/chat.routes.js";
 app.use("/api/v1/chat/", chatRouter);
 
+// Default route
+app.get("/", (req, res) => {
+  res.send("Hello World");
+});
+
 export { app };
