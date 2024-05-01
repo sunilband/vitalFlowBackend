@@ -16,3 +16,5 @@ connectDB()
   .catch((error) => {
     console.log("Custom Error : MongoDB connection failed !", error);
   });
+
+module.exports = app;
